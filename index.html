@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Eden - Scavenger Hunt</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body style="margin: 0; padding: 0;">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        const ScavengerHunt = () => {
+          const [currentLevel, setCurrentLevel] = useState(0);
+          const [currentSection, setCurrentSection] = useState(0);
+          const [collectedShards, setCollectedShards] = useState([]);
+          const [inputValue, setInputValue] = useState('');
+          const [feedback, setFeedback] = useState('');
+          const [showShard, setShowShard] = useState(false);
+          const [showCrystal, setShowCrystal] = useState(false);
+
+          const levels = [
+            {
+              name: 'HTRNLAP',
+              color: 'level-0',
+              shardName: 'Shard of Perspective',
+              sourceLink: 'https://docs.google.com/document/d/1TJF1iBb4_BjXL-wNJEI_OIzMNOwrxsBChzopzfFlHrY/edit?usp=sharing',
+              sourceLabel: 'Article',
+              sections: [
+                {
+                  title: 'The Platform',
+                  question: 'Using the article as a reference, identify what the platform is.',
+                  answers: ['Angel77', 'angel77', 'ANGEL77']
+                },
+                {
+                  title: 'Rhetorical Tilt',
+                  question: 'Foster defines "rhetorical tilt" as the use of charged or slanted words to influence perception. Locate ONE of these words used in the article. (Eden examples: blessed, peaceful, shining, harmony, light | Nod examples: hatred, envy, savagery, destruction, desperation)',
+                  answers: ['blessed', 'peaceful', 'shining', 'harmony', 'light', 'hatred', 'envy', 'savagery', 'destruction', 'desperation']
+                },
+                {
+                  title: 'Bad Faith Writing',
+                  question: 'The article relies on vague, unnamed reports without expert testimony, which Foster warns is a common tactic in _________. (Hint: p.224)',
+                  answers: ['bad faith writing', 'Bad faith writing', 'BAD FAITH WRITING']
+                },
+                {
+                  title: 'When Was the Attack?',
+                  question: 'Foster notes that hard news journalism should have the Five Ws in the very first paragraph. Examine the first paragraph of "Nod\'s Aggression Calls for a United Eden" and identify the "when" of the most recent assault.',
+                  answers: ['March 29', 'march 29', 'March 29th']
+                },
+                {
+                  title: 'The Secret Code',
+                  question: 'Look at the pieces of the article that stand out to you visually or structurally. What does the structure of writing reveal about its meaning?',
+                  answers: ['the structure of a piece of writing affects its meaning', 'The structure of a piece of writing affects its meaning', 'structure affects meaning']
+                }
+              ]
+            },
+            {
+              name: '1984',
+              color: 'level-1',
+              shardName: 'Shard of Language',
+              sourceLink: 'https://docs.google.com/document/d/12PGpLeJxPuNLXdmQGuFlB1rOXYplWXegxc-QPeY_Lvs/edit?usp=sharing',
+              sourceLabel: 'Archive',
+              sections: [
+                {
+                  title: 'The Records',
+                  question: 'Navigate to the tab called People\'s Records. What do you observe about how history is being controlled?',
+                  answers: ['eden controls truth', 'Eden controls truth', 'EDEN CONTROLS TRUTH', 'truth is controlled', 'language is power']
+                },
+                {
+                  title: 'The Final Code',
+                  question: 'Synthesize what you\'ve discovered. Complete this statement: EDEN CONTROLS _______ _______',
+                  answers: ['truth language', 'TRUTH LANGUAGE', 'Truth Language']
+                },
+                {
+                  title: '[Section 3 - In Development]',
+                  question: 'What role does language play in controlling society?',
+                  answers: ['placeholder']
+                },
+                {
+                  title: '[Section 4 - In Development]',
+                  question: 'How can citizens resist linguistic manipulation?',
+                  answers: ['placeholder']
+                }
+              ]
+            },
+            {
+              name: 'The Handmaid\'s Tale',
+              color: 'level-2',
+              shardName: 'Shard of Individuality',
+              sourceLink: '#',
+              sourceLabel: 'Text',
+              sections: [
+                {
+                  title: '[Section 1 - In Development]',
+                  question: 'What is the primary form of control in this society?',
+                  answers: ['placeholder']
+                },
+                {
+                  title: '[Section 2 - In Development]',
+                  question: 'How do systems use identity to maintain power?',
+                  answers: ['placeholder']
+                },
+                {
+                  title: '[Section 3 - In Development]',
+                  question: 'What small acts of rebellion occur?',
+                  answers: ['placeholder']
+                },
+                {
+                  title: '[Section 4 - In Development]',
+                  question: 'How is individuality suppressed?',
+                  answers: ['placeholder']
+                }
+              ]
+            },
+            {
+              name: 'Ready Player One',
+              color: 'level-3',
+              shardName: 'Shard of Reality',
+              sourceLink: '#',
+              sourceLabel: 'Text',
+              sections: [
+                {
+                  title: '[Section 1 - In Development]',
+                  question: 'What is the escape from reality?',
+                  answers: ['placeholder']
+                },
+                {
+                  title: '[Section 2 - In Development]',
+                  question: 'How does virtual reality replace actual society?',
+                  answers: ['placeholder']
+                },
+                {
+                  title: '[Section 3 - In Development]',
+                  question: 'What are the consequences of this escape?',
+                  answers: ['placeholder']
+                },
+                {
+                  title: '[Section 4 - In Development]',
+                  question: 'Can we find truth in illusion?',
+                  answers: ['placeholder']
+                }
+              ]
+            },
+            {
+              name: 'Propaganda & Media',
+              color: 'level-4',
+              shardName: 'Shard of Truth',
+              sourceLink: '#',
+              sourceLabel: 'Materials',
+              sections: [
+                {
+                  title: '[Section 1 - In Development]',
+                  question: 'How is propaganda distinct from advertising?',
+                  answers: ['placeholder']
+                },
+                {
+                  title: '[Section 2 - In Development]',
+                  question: 'What techniques are used to influence public opinion?',
+                  answers: ['placeholder']
+                },
+                {
+                  title: '[Section 3 - In Development]',
+                  question: 'How do we identify bias in media?',
+                  answers: ['placeholder']
+                },
+                {
+                  title: '[Section 4 - In Development]',
+                  question: 'What is the responsibility of critical consumers?',
+                  answers: ['placeholder']
+                }
+              ]
+            },
+            {
+              name: 'Dystopian Elements',
+              color: 'level-5',
+              shardName: 'Shard of Light',
+              sourceLink: '#',
+              sourceLabel: 'Analysis',
+              sections: [
+                {
+                  title: '[Section 1 - In Development]',
+                  question: 'What defines a dystopian society?',
+                  answers: ['placeholder']
+                },
+                {
+                  title: '[Section 2 - In Development]',
+                  question: 'How do these authors warn us about the future?',
+                  answers: ['placeholder']
+                },
+                {
+                  title: '[Section 3 - In Development]',
+                  question: 'What patterns emerge across dystopian literature?',
+                  answers: ['placeholder']
+                },
+                {
+                  title: '[Section 4 - In Development]',
+                  question: 'What hope exists within these dark narratives?',
+                  answers: ['placeholder']
+                }
+              ]
+            },
+            {
+              name: 'Synthesis & Escape',
+              color: 'level-6',
+              shardName: 'Shard of Enlightenment',
+              sourceLink: '#',
+              sourceLabel: 'Reflection',
+              sections: [
+                {
+                  title: '[Section 1 - In Development]',
+                  question: 'How are all these texts connected?',
+                  answers: ['placeholder']
+                },
+                {
+                  title: '[Section 2 - In Development]',
+                  question: 'What is the cost of awareness?',
+                  answers: ['placeholder']
+                },
+                {
+                  title: '[Section 3 - In Development]',
+                  question: 'How do we break free from systems of control?',
+                  answers: ['placeholder']
+                },
+                {
+                  title: '[Section 4 - In Development]',
+                  question: 'What does enlightenment truly mean?',
+                  answers: ['placeholder']
+                }
+              ]
+            }
+          ];
+
+          const shardColors = [
+            '#FFD700', '#FFA500', '#FF6347', '#DC143C', '#8B0000', '#4B0000', '#FF1493'
+          ];
+
+          const handleSubmitAnswer = () => {
+            const currentLevelData = levels[currentLevel];
+            const currentSectionData = currentLevelData.sections[currentSection];
+            
+            const normalizedInput = inputValue.toLowerCase().trim();
+            const isCorrect = currentSectionData.answers.some(
+              answer => answer.toLowerCase().trim() === normalizedInput
+            );
+
+            if (isCorrect) {
+              setFeedback('✓ Correct!');
+              
+              if (currentSection === currentLevelData.sections.length - 1) {
+                setShowShard(true);
+                setTimeout(() => {
+                  setCollectedShards([...collectedShards, {
+                    name: currentLevelData.shardName,
+                    level: currentLevel,
+                    color: shardColors[currentLevel]
+                  }]);
+                  
+                  if (currentLevel === levels.length - 1) {
+                    setShowCrystal(true);
+                  } else {
+                    setCurrentLevel(currentLevel + 1);
+                    setCurrentSection(0);
+                    setInputValue('');
+                    setFeedback('');
+                    setShowShard(false);
+                  }
+                }, 2000);
+              } else {
+                setFeedback('✓ Correct! Moving to next question...');
+                setTimeout(() => {
+                  setCurrentSection(currentSection + 1);
+                  setInputValue('');
+                  setFeedback('');
+                }, 1500);
+              }
+            } else {
+              setFeedback('✗ Not quite. Try again or check the source material.');
+            }
+          };
+
+          const handleKeyPress = (e) => {
+            if (e.key === 'Enter') {
+              handleSubmitAnswer();
+            }
+          };
+
+          const getBackgroundGradient = () => {
+            const progress = (currentLevel / (levels.length - 1)) * 100;
+            return `linear-gradient(135deg, 
+              hsl(50, 100%, 90%) 0%,
+              hsl(45, 100%, 85%) ${progress * 0.25}%,
+              hsl(0, 100%, 85%) ${progress * 0.5}%,
+              hsl(0, 100%, 25%) ${progress * 0.75}%,
+              hsl(0, 100%, 10%) 100%)`;
+          };
+
+          const getTextColor = () => {
+            return currentLevel < 3 ? '#1a1a1a' : '#f0f0f0';
+          };
+
+          const getAccentColor = () => {
+            if (currentLevel === 0) return '#FFD700';
+            if (currentLevel === 1) return '#FFA500';
+            if (currentLevel === 2) return '#FF6347';
+            return '#FF1493';
+          };
+
+          if (showCrystal) {
+            return (
+              <div style={{
+                width: '100vw',
+                height: '100vh',
+                background: 'radial-gradient(circle, #1a0000 0%, #000000 100%)',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                color: '#fff',
+                overflow: 'hidden',
+                fontFamily: '"Audiowide", sans-serif'
+              }}>
+                <style>{`
+                  @import url('https://fonts.googleapis.com/css2?family=Audiowide&display=swap');
+                  
+                  @keyframes crystalForm {
+                    0% {
+                      opacity: 0;
+                      transform: scale(0) rotateX(180deg);
+                    }
+                    100% {
+                      opacity: 1;
+                      transform: scale(1) rotateX(0deg);
+                    }
+                  }
+                  
+                  @keyframes crystalGlow {
+                    0%, 100% { box-shadow: 0 0 20px rgba(255, 20, 147, 0.5), 0 0 40px rgba(255, 20, 147, 0.3); }
+                    50% { box-shadow: 0 0 40px rgba(255, 20, 147, 0.8), 0 0 80px rgba(255, 20, 147, 0.5); }
+                  }
+                  
+                  .crystal {
+                    width: 200px;
+                    height: 200px;
+                    background: linear-gradient(135deg, #FF1493 0%, #FF69B4 50%, #FFB6C1 100%);
+                    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+                    animation: crystalForm 2s ease-out, crystalGlow 2s ease-in-out 2s infinite;
+                    margin: 50px auto;
+                  }
+                  
+                  .victory-text {
+                    text-align: center;
+                    margin-top: 30px;
+                  }
+                  
+                  .victory-text h1 {
+                    font-size: 3.5em;
+                    margin: 0;
+                    color: #FF1493;
+                    text-shadow: 0 0 20px rgba(255, 20, 147, 0.8);
+                    letter-spacing: 3px;
+                  }
+                  
+                  .victory-text p {
+                    font-size: 1.3em;
+                    color: #FFB6C1;
+                    margin-top: 20px;
+                    letter-spacing: 2px;
+                  }
+                `}</style>
+                
+                <div style={{ position: 'relative', width: '300px', height: '300px', marginBottom: '40px' }}>
+                  <div className="crystal"></div>
+                </div>
+                
+                <div className="victory-text">
+                  <h1>CRYSTAL OF WISDOM OBTAINED</h1>
+                  <p>YOU HAVE BROKEN FREE FROM EDEN</p>
+                  <p style={{ marginTop: '40px', fontSize: '1em', color: '#999' }}>Collected {collectedShards.length} Shards</p>
+                </div>
+              </div>
+            );
+          }
+
+          const currentLevelData = levels[currentLevel];
+          const currentSectionData = currentLevelData.sections[currentSection];
+          const progress = ((currentLevel * 100) / (levels.length - 1));
+
+          return (
+            <div style={{
+              width: '100vw',
+              minHeight: '100vh',
+              background: getBackgroundGradient(),
+              padding: '20px',
+              fontFamily: '"Crimson Text", serif',
+              transition: 'all 0.8s ease-in-out',
+              position: 'relative'
+            }}>
+              <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=Crimson+Text:ital@0;1&family=Space+Grotesk:wght@400;700&display=swap');
+                
+                @keyframes slideIn {
+                  from {
+                    opacity: 0;
+                    transform: translateY(30px);
+                  }
+                  to {
+                    opacity: 1;
+                    transform: translateY(0);
+                  }
+                }
+                
+                @keyframes shardAppear {
+                  0% {
+                    opacity: 0;
+                    transform: scale(0) rotateZ(-180deg);
+                  }
+                  100% {
+                    opacity: 1;
+                    transform: scale(1) rotateZ(0deg);
+                  }
+                }
+                
+                @keyframes pulse {
+                  0%, 100% { transform: scale(1); }
+                  50% { transform: scale(1.05); }
+                }
+                
+                .shard-backpack {
+                  position: fixed;
+                  top: 20px;
+                  right: 20px;
+                  display: flex;
+                  gap: 10px;
+                  flex-wrap: wrap;
+                  max-width: 200px;
+                  justify-content: flex-end;
+                  z-index: 1000;
+                }
+                
+                .shard {
+                  width: 40px;
+                  height: 40px;
+                  border-radius: 50%;
+                  animation: shardAppear 1s ease-out;
+                  box-shadow: 0 0 15px currentColor;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 0.8em;
+                  font-weight: bold;
+                  color: white;
+                }
+                
+                .content {
+                  max-width: 900px;
+                  margin: 80px auto 40px;
+                  animation: slideIn 0.6s ease-out;
+                }
+                
+                .level-title {
+                  font-family: "Space Grotesk", sans-serif;
+                  font-size: 2.5em;
+                  font-weight: 700;
+                  text-align: center;
+                  margin-bottom: 10px;
+                  letter-spacing: 4px;
+                  color: ${getTextColor()};
+                }
+                
+                .level-subtitle {
+                  text-align: center;
+                  font-size: 1em;
+                  color: ${getTextColor()};
+                  opacity: 0.8;
+                  margin-bottom: 30px;
+                }
+                
+                .source-link {
+                  display: inline-block;
+                  background: ${getAccentColor()};
+                  color: ${currentLevel < 3 ? '#000' : '#fff'};
+                  padding: 12px 24px;
+                  text-decoration: none;
+                  border-radius: 4px;
+                  font-family: "Space Grotesk", sans-serif;
+                  font-weight: 700;
+                  margin-bottom: 30px;
+                  transition: all 0.3s ease;
+                  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                }
+                
+                .source-link:hover {
+                  transform: translateY(-2px);
+                  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+                }
+                
+                .section-card {
+                  background: ${currentLevel < 3 ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.6)'};
+                  padding: 40px;
+                  border-radius: 8px;
+                  margin: 30px 0;
+                  border: 2px solid ${getAccentColor()};
+                  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+                }
+                
+                .section-number {
+                  font-family: "Space Grotesk", sans-serif;
+                  font-size: 0.9em;
+                  color: ${getAccentColor()};
+                  text-transform: uppercase;
+                  letter-spacing: 2px;
+                  margin-bottom: 10px;
+                }
+                
+                .section-title {
+                  font-family: "Space Grotesk", sans-serif;
+                  font-size: 1.8em;
+                  font-weight: 700;
+                  color: ${getTextColor()};
+                  margin: 15px 0 25px 0;
+                }
+                
+                .section-question {
+                  font-size: 1.2em;
+                  line-height: 1.8;
+                  color: ${getTextColor()};
+                  margin-bottom: 25px;
+                  font-style: italic;
+                }
+                
+                .input-group {
+                  display: flex;
+                  gap: 10px;
+                  margin-top: 25px;
+                }
+                
+                .answer-input {
+                  flex: 1;
+                  padding: 14px 20px;
+                  font-size: 1em;
+                  border: 2px solid ${getAccentColor()};
+                  border-radius: 4px;
+                  font-family: "Space Grotesk", sans-serif;
+                  background: ${currentLevel < 3 ? 'white' : '#1a1a1a'};
+                  color: ${getTextColor()};
+                  transition: all 0.3s ease;
+                }
+                
+                .answer-input:focus {
+                  outline: none;
+                  box-shadow: 0 0 0 3px ${getAccentColor()}33;
+                  transform: translateY(-2px);
+                }
+                
+                .submit-btn {
+                  padding: 14px 30px;
+                  background: ${getAccentColor()};
+                  color: ${currentLevel < 3 ? '#000' : '#fff'};
+                  border: none;
+                  border-radius: 4px;
+                  font-family: "Space Grotesk", sans-serif;
+                  font-weight: 700;
+                  font-size: 1em;
+                  cursor: pointer;
+                  transition: all 0.3s ease;
+                  text-transform: uppercase;
+                  letter-spacing: 2px;
+                }
+                
+                .submit-btn:hover {
+                  transform: translateY(-3px);
+                  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+                }
+                
+                .submit-btn:active {
+                  transform: translateY(-1px);
+                }
+                
+                .feedback {
+                  margin-top: 20px;
+                  padding: 15px;
+                  border-radius: 4px;
+                  font-family: "Space Grotesk", sans-serif;
+                  font-weight: 700;
+                  text-align: center;
+                  min-height: 20px;
+                }
+                
+                .feedback.correct {
+                  color: #22c55e;
+                  background: rgba(34, 197, 94, 0.1);
+                }
+                
+                .feedback.incorrect {
+                  color: ${currentLevel < 3 ? '#dc2626' : '#ff69b4'};
+                  background: rgba(220, 38, 38, 0.1);
+                }
+                
+                .progress-bar {
+                  position: fixed;
+                  bottom: 0;
+                  left: 0;
+                  height: 6px;
+                  background: ${getAccentColor()};
+                  width: ${progress}%;
+                  transition: width 0.5s ease;
+                  z-index: 100;
+                }
+              `}</style>
+
+              <div className="shard-backpack">
+                {collectedShards.map((shard, idx) => (
+                  <div key={idx} className="shard" style={{ backgroundColor: shard.color }}>
+                    {idx + 1}
+                  </div>
+                ))}
+              </div>
+
+              <div className="content">
+                {currentSection === 0 && (
+                  <>
+                    <div className="level-title">{currentLevelData.name}</div>
+                    <div className="level-subtitle">Level {currentLevel + 1} of {levels.length}</div>
+                    <div style={{ textAlign: 'center' }}>
+                      <a href={currentLevelData.sourceLink} target="_blank" rel="noopener noreferrer" className="source-link">
+                        📖 VIEW {currentLevelData.sourceLabel.toUpperCase()}
+                      </a>
+                    </div>
+                  </>
+                )}
+
+                <div className="section-card">
+                  <div className="section-number">
+                    Section {currentSection + 1} of {currentLevelData.sections.length}
+                  </div>
+                  <div className="section-title">{currentSectionData.title}</div>
+                  <div className="section-question">{currentSectionData.question}</div>
+
+                  <div className="input-group">
+                    <input
+                      type="text"
+                      className="answer-input"
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      placeholder="Enter your answer..."
+                    />
+                    <button className="submit-btn" onClick={handleSubmitAnswer}>
+                      Submit
+                    </button>
+                  </div>
+
+                  {feedback && (
+                    <div className={`feedback ${feedback.includes('Correct') ? 'correct' : 'incorrect'}`}>
+                      {feedback}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {showShard && (
+                <div style={{
+                  position: 'fixed',
+                  left: '50%',
+                  top: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  textAlign: 'center',
+                  zIndex: '2000',
+                  animation: 'slideIn 0.5s ease-out'
+                }}>
+                  <div style={{
+                    width: '150px',
+                    height: '150px',
+                    borderRadius: '50%',
+                    background: `radial-gradient(circle at 30% 30%, ${shardColors[currentLevel]}, ${shardColors[currentLevel]}aa)`,
+                    margin: '0 auto 30px',
+                    boxShadow: `0 0 50px ${shardColors[currentLevel]}`,
+                    animation: 'pulse 2s ease-in-out infinite'
+                  }}></div>
+                  <div style={{
+                    fontFamily: '"Space Grotesk", sans-serif',
+                    fontSize: '1.5em',
+                    fontWeight: '700',
+                    color: shardColors[currentLevel],
+                    textShadow: `0 0 20px ${shardColors[currentLevel]}77`,
+                    letterSpacing: '2px'
+                  }}>
+                    {currentLevelData.shardName}
+                  </div>
+                </div>
+              )}
+
+              <div className="progress-bar"></div>
+            </div>
+          );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<ScavengerHunt />);
+    </script>
+</body>
+</html>
