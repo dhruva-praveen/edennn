@@ -14,6 +14,8 @@
     <script type="text/babel">
         const { useState } = React;
 
+        const lerp = (a, b, t) => a + (b - a) * t;
+
         const ScavengerHunt = () => {
           const [currentLevel, setCurrentLevel] = useState(0);
           const [currentSection, setCurrentSection] = useState(0);
@@ -67,12 +69,12 @@
               sections: [
                 {
                   title: 'The People\'s Records',
-                  question: 'You\'ve infiltrated the Archives. Navigate to the People’s Records. In this section, Eden records every citizen that has ever existed under their ID numbers. In the book 1984, O’Brien functions as a perfect citizen who exists within the Inner Party. Based on the given records, enter the ID (E-###) of the citizen of Eden who mirrors O’Brien’s role in his dystopian world. ',
+                  question: 'You\'ve infiltrated the Archives. Navigate to the People\'s Records. In this section, Eden records every citizen that has ever existed under their ID numbers. In the book 1984, O\'Brien functions as a perfect citizen who exists within the Inner Party. Based on the given records, enter the ID (E-###) of the citizen of Eden who mirrors O\'Brien\'s role in his dystopian world.',
                   answers: ['E-016', '016', 'E016', '16']
                 },
                 {
                   title: 'The Historical Records',
-                  question: 'In 1984, the Party constantly rewrites history to fit its agenda. In Eden’s Archive, find the place where Eden documents how they change the past to shape people’s memories. ',
+                  question: 'In 1984, the Party constantly rewrites history to fit its agenda. In Eden\'s Archive, find the place where Eden documents how they change the past to shape people\'s memories.',
                   answers: ['Historical Records', 'HISTORICAL RECORDS', 'historical records']
                 },
                 {
@@ -225,13 +227,13 @@
           ];
 
           const shardColors = [
-            '#FFD700', '#FFA500', '#FF6347', '#DC143C', '#8B0000', '#4B0000', '#FF1493'
+            '#4A90D9', '#3A6FBF', '#6A3FAF', '#9B2080', '#C0201C', '#8B0000', '#CC0000'
           ];
 
           const handleSubmitAnswer = () => {
             const currentLevelData = levels[currentLevel];
             const currentSectionData = currentLevelData.sections[currentSection];
-            
+
             const normalizedInput = inputValue.toLowerCase().trim();
             const isCorrect = currentSectionData.answers.some(
               answer => answer.toLowerCase().trim() === normalizedInput
@@ -239,16 +241,17 @@
 
             if (isCorrect) {
               setFeedback('✓ Correct!');
-              
+
               if (currentSection === currentLevelData.sections.length - 1) {
                 setShowShard(true);
                 setTimeout(() => {
-                  setCollectedShards([...collectedShards, {
+                  // FIX: use functional updater to avoid stale closure
+                  setCollectedShards(prev => [...prev, {
                     name: currentLevelData.shardName,
                     level: currentLevel,
                     color: shardColors[currentLevel]
                   }]);
-                  
+
                   if (currentLevel === levels.length - 1) {
                     setShowCrystal(true);
                   } else {
@@ -272,112 +275,257 @@
             }
           };
 
-          const handleKeyPress = (e) => {
+          // FIX: replaced deprecated onKeyPress with onKeyDown
+          const handleKeyDown = (e) => {
             if (e.key === 'Enter') {
               handleSubmitAnswer();
             }
           };
 
+          // Pure neutral: white → gray → black, no hue tint at all
           const getBackgroundGradient = () => {
-            const progress = (currentLevel / (levels.length - 1)) * 100;
-            return `linear-gradient(135deg, 
-              hsl(50, 100%, 90%) 0%,
-              hsl(45, 100%, 85%) ${progress * 0.25}%,
-              hsl(0, 100%, 85%) ${progress * 0.5}%,
-              hsl(0, 100%, 25%) ${progress * 0.75}%,
-              hsl(0, 100%, 10%) 100%)`;
+            const t        = currentLevel / Math.max(levels.length - 1, 1);
+            const lightTop = Math.round(lerp(100, 8, t));
+            const lightBot = Math.round(lerp(93, 2, t));
+            return `linear-gradient(160deg, hsl(0,0%,${lightTop}%) 0%, hsl(0,0%,${lightBot}%) 100%)`;
           };
 
           const getTextColor = () => {
-            return currentLevel < 3 ? '#1a1a1a' : '#f0f0f0';
+            // Switch to light text once background gets dark enough (level 3+)
+            return currentLevel < 3 ? '#111111' : '#f0f0f0';
           };
 
           const getAccentColor = () => {
-            if (currentLevel === 0) return '#FFD700';
-            if (currentLevel === 1) return '#FFA500';
-            if (currentLevel === 2) return '#FF6347';
-            return '#FF1493';
+            // Go blue(215°) → purple(270°) → red(360°) — the short clockwise path avoids green
+            const t   = currentLevel / Math.max(levels.length - 1, 1);
+            const hue = Math.round(lerp(215, 360, t)) % 360;
+            const sat = 85;
+            const lit = Math.round(lerp(50, 42, t));
+            return `hsl(${hue}, ${sat}%, ${lit}%)`;
           };
 
           if (showCrystal) {
-            return (
-              <div style={{
-                width: '100vw',
-                height: '100vh',
-                background: 'radial-gradient(circle, #1a0000 0%, #000000 100%)',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                color: '#fff',
-                overflow: 'hidden',
-                fontFamily: '"Audiowide", sans-serif'
-              }}>
-                <style>{`
-                  @import url('https://fonts.googleapis.com/css2?family=Audiowide&display=swap');
-                  
-                  @keyframes crystalForm {
-                    0% {
-                      opacity: 0;
-                      transform: scale(0) rotateX(180deg);
+            const CrystalScene = () => {
+              const canvasRef = React.useRef(null);
+              const [phase, setPhase] = React.useState('swirl'); // swirl | merge | crystal
+              const frameRef = React.useRef(0);
+              const startRef = React.useRef(null);
+
+              const SHARD_COLORS = ['#4A90D9','#5B5FD9','#7B3FBF','#A02090','#C02040','#C83020','#CC1010'];
+              const TOTAL_SWIRL  = 2800; // ms orbiting
+              const TOTAL_MERGE  = 900;  // ms rushing inward
+              const TOTAL_CRYSTAL = 1200; // ms crystal forming
+
+              React.useEffect(() => {
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                const W = canvas.width = 500;
+                const H = canvas.height = 500;
+                const cx = W / 2, cy = H / 2;
+                const N = 7;
+
+                // Each shard: angle offset, orbit radius, size
+                const shards = SHARD_COLORS.map((color, i) => ({
+                  color,
+                  angleOffset: (i / N) * Math.PI * 2,
+                  orbitR: 160,
+                  size: 22,
+                }));
+
+                const easeIn  = t => t * t * t;
+                const easeOut = t => 1 - Math.pow(1 - t, 3);
+                const easeInOut = t => t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2;
+
+                // draw a hexagon shard
+                const drawShard = (ctx, x, y, size, color, alpha) => {
+                  ctx.save();
+                  ctx.globalAlpha = alpha;
+                  ctx.beginPath();
+                  for (let i = 0; i < 6; i++) {
+                    const a = (i / 6) * Math.PI * 2 - Math.PI / 6;
+                    const px = x + size * Math.cos(a);
+                    const py = y + size * Math.sin(a);
+                    i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+                  }
+                  ctx.closePath();
+                  ctx.fillStyle = color;
+                  ctx.shadowColor = color;
+                  ctx.shadowBlur = 18;
+                  ctx.fill();
+                  ctx.restore();
+                };
+
+                // draw final white crystal (hexagon with inner glow)
+                const drawCrystal = (ctx, scale, glowPulse) => {
+                  ctx.save();
+                  ctx.translate(cx, cy);
+
+                  // outer glow layers
+                  [80, 50, 30].forEach((blur, i) => {
+                    ctx.beginPath();
+                    const r = 70 * scale;
+                    for (let j = 0; j < 6; j++) {
+                      const a = (j / 6) * Math.PI * 2 - Math.PI / 6;
+                      j === 0 ? ctx.moveTo(r * Math.cos(a), r * Math.sin(a))
+                               : ctx.lineTo(r * Math.cos(a), r * Math.sin(a));
                     }
-                    100% {
-                      opacity: 1;
-                      transform: scale(1) rotateX(0deg);
+                    ctx.closePath();
+                    ctx.shadowColor = `rgba(255,255,255,${0.4 + glowPulse * 0.3})`;
+                    ctx.shadowBlur = blur * (1 + glowPulse * 0.4);
+                    ctx.fillStyle = `rgba(255,255,255,${0.08 + i * 0.04})`;
+                    ctx.fill();
+                  });
+
+                  // solid crystal body
+                  ctx.beginPath();
+                  const r = 65 * scale;
+                  for (let j = 0; j < 6; j++) {
+                    const a = (j / 6) * Math.PI * 2 - Math.PI / 6;
+                    j === 0 ? ctx.moveTo(r * Math.cos(a), r * Math.sin(a))
+                             : ctx.lineTo(r * Math.cos(a), r * Math.sin(a));
+                  }
+                  ctx.closePath();
+                  const grad = ctx.createRadialGradient(-15 * scale, -15 * scale, 0, 0, 0, r);
+                  grad.addColorStop(0, 'rgba(255,255,255,1)');
+                  grad.addColorStop(0.5, 'rgba(220,235,255,0.95)');
+                  grad.addColorStop(1, 'rgba(180,210,255,0.85)');
+                  ctx.fillStyle = grad;
+                  ctx.shadowColor = 'rgba(255,255,255,0.9)';
+                  ctx.shadowBlur = 40 + glowPulse * 30;
+                  ctx.fill();
+
+                  // inner facet lines
+                  ctx.globalAlpha = 0.25;
+                  ctx.strokeStyle = 'white';
+                  ctx.lineWidth = 1;
+                  for (let j = 0; j < 6; j++) {
+                    const a = (j / 6) * Math.PI * 2 - Math.PI / 6;
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(r * Math.cos(a), r * Math.sin(a));
+                    ctx.stroke();
+                  }
+
+                  ctx.restore();
+                };
+
+                let currentPhase = 'swirl';
+
+                const animate = (ts) => {
+                  if (!startRef.current) startRef.current = ts;
+                  const elapsed = ts - startRef.current;
+
+                  ctx.clearRect(0, 0, W, H);
+
+                  // background
+                  ctx.fillStyle = '#000';
+                  ctx.fillRect(0, 0, W, H);
+
+                  if (currentPhase === 'swirl') {
+                    const t = Math.min(elapsed / TOTAL_SWIRL, 1);
+                    // orbit radius shrinks slightly over time to build tension
+                    const orbitR = 160 - 30 * easeIn(t);
+                    const spinSpeed = 1.5 + t * 2; // accelerates
+
+                    shards.forEach((s, i) => {
+                      const angle = s.angleOffset + (elapsed / 1000) * spinSpeed;
+                      const x = cx + orbitR * Math.cos(angle);
+                      const y = cy + orbitR * Math.sin(angle);
+                      drawShard(ctx, x, y, s.size, s.color, 0.85 + 0.15 * Math.sin(elapsed / 300 + i));
+                    });
+
+                    if (t >= 1) {
+                      currentPhase = 'merge';
+                      startRef.current = ts;
+                      setPhase('merge');
                     }
+
+                  } else if (currentPhase === 'merge') {
+                    const t = Math.min(elapsed / TOTAL_MERGE, 1);
+                    const ease = easeIn(t);
+
+                    shards.forEach((s, i) => {
+                      // last angle from swirl end
+                      const baseAngle = s.angleOffset + (TOTAL_SWIRL / 1000) * 3.5;
+                      const angle = baseAngle + t * Math.PI * 0.5;
+                      const orbitR = 130 * (1 - ease);
+                      const x = cx + orbitR * Math.cos(angle);
+                      const y = cy + orbitR * Math.sin(angle);
+                      const alpha = 1 - ease * 0.9;
+                      const size  = s.size * (1 - ease * 0.6);
+                      drawShard(ctx, x, y, size, s.color, alpha);
+                    });
+
+                    // central flash as they converge
+                    if (t > 0.6) {
+                      const flashT = (t - 0.6) / 0.4;
+                      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 80 * flashT);
+                      grad.addColorStop(0, `rgba(255,255,255,${flashT * 0.9})`);
+                      grad.addColorStop(1, 'rgba(255,255,255,0)');
+                      ctx.fillStyle = grad;
+                      ctx.fillRect(0, 0, W, H);
+                    }
+
+                    if (t >= 1) {
+                      currentPhase = 'crystal';
+                      startRef.current = ts;
+                      setPhase('crystal');
+                    }
+
+                  } else if (currentPhase === 'crystal') {
+                    const t = Math.min(elapsed / TOTAL_CRYSTAL, 1);
+                    const scale = easeOut(t);
+                    const glowPulse = Math.sin(elapsed / 600) * 0.5 + 0.5;
+                    drawCrystal(ctx, scale, glowPulse);
                   }
-                  
-                  @keyframes crystalGlow {
-                    0%, 100% { box-shadow: 0 0 20px rgba(255, 20, 147, 0.5), 0 0 40px rgba(255, 20, 147, 0.3); }
-                    50% { box-shadow: 0 0 40px rgba(255, 20, 147, 0.8), 0 0 80px rgba(255, 20, 147, 0.5); }
-                  }
-                  
-                  .crystal {
-                    width: 200px;
-                    height: 200px;
-                    background: linear-gradient(135deg, #FF1493 0%, #FF69B4 50%, #FFB6C1 100%);
-                    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-                    animation: crystalForm 2s ease-out, crystalGlow 2s ease-in-out 2s infinite;
-                    margin: 50px auto;
-                  }
-                  
-                  .victory-text {
-                    text-align: center;
-                    margin-top: 30px;
-                  }
-                  
-                  .victory-text h1 {
-                    font-size: 3.5em;
-                    margin: 0;
-                    color: #FF1493;
-                    text-shadow: 0 0 20px rgba(255, 20, 147, 0.8);
-                    letter-spacing: 3px;
-                  }
-                  
-                  .victory-text p {
-                    font-size: 1.3em;
-                    color: #FFB6C1;
-                    margin-top: 20px;
-                    letter-spacing: 2px;
-                  }
-                `}</style>
-                
-                <div style={{ position: 'relative', width: '300px', height: '300px', marginBottom: '40px' }}>
-                  <div className="crystal"></div>
+
+                  frameRef.current = requestAnimationFrame(animate);
+                };
+
+                frameRef.current = requestAnimationFrame(animate);
+                return () => cancelAnimationFrame(frameRef.current);
+              }, []);
+
+              return (
+                <div style={{
+                  width: '100vw', height: '100vh',
+                  background: '#000',
+                  display: 'flex', flexDirection: 'column',
+                  alignItems: 'center', justifyContent: 'center',
+                  fontFamily: '"Audiowide", sans-serif',
+                  overflow: 'hidden'
+                }}>
+                  <style>{`
+                    @import url('https://fonts.googleapis.com/css2?family=Audiowide&display=swap');
+                    @keyframes victoryFadeIn {
+                      from { opacity: 0; transform: translateY(16px); }
+                      to   { opacity: 1; transform: translateY(0); }
+                    }
+                  `}</style>
+                  <canvas ref={canvasRef} style={{ width: '340px', height: '340px' }} />
+                  {phase === 'crystal' && (
+                    <div style={{ textAlign: 'center', animation: 'victoryFadeIn 1s ease-out 0.6s both' }}>
+                      <h1 style={{
+                        fontSize: '2.2em', margin: '0 0 12px',
+                        color: 'white',
+                        textShadow: '0 0 30px rgba(255,255,255,0.8)',
+                        letterSpacing: '3px'
+                      }}>CRYSTAL OF WISDOM</h1>
+                      <p style={{ color: 'rgba(200,220,255,0.8)', letterSpacing: '2px', fontSize: '1em', margin: 0 }}>
+                        YOU HAVE BROKEN FREE FROM EDEN
+                      </p>
+                    </div>
+                  )}
                 </div>
-                
-                <div className="victory-text">
-                  <h1>CRYSTAL OF WISDOM OBTAINED</h1>
-                  <p>YOU HAVE BROKEN FREE FROM EDEN</p>
-                  <p style={{ marginTop: '40px', fontSize: '1em', color: '#999' }}>Collected {collectedShards.length} Shards</p>
-                </div>
-              </div>
-            );
+              );
+            };
+            return <CrystalScene />;
           }
 
           const currentLevelData = levels[currentLevel];
           const currentSectionData = currentLevelData.sections[currentSection];
-          const progress = ((currentLevel * 100) / (levels.length - 1));
+          const progress = (currentLevel / (levels.length - 1)) * 100;
 
           return (
             <div style={{
@@ -385,149 +533,183 @@
               minHeight: '100vh',
               background: getBackgroundGradient(),
               padding: '20px',
+              paddingTop: '70px',
               fontFamily: '"Crimson Text", serif',
-              transition: 'all 0.8s ease-in-out',
-              position: 'relative'
+              transition: 'background 1.2s ease-in-out',
+              position: 'relative',
+              boxSizing: 'border-box'
             }}>
               <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Crimson+Text:ital@0;1&family=Space+Grotesk:wght@400;700&display=swap');
-                
+
                 @keyframes slideIn {
-                  from {
-                    opacity: 0;
-                    transform: translateY(30px);
-                  }
-                  to {
-                    opacity: 1;
-                    transform: translateY(0);
-                  }
+                  from { opacity: 0; transform: translateY(30px); }
+                  to   { opacity: 1; transform: translateY(0); }
                 }
-                
+
+                /* FIX: smoother shard animation with spring easing */
                 @keyframes shardAppear {
-                  0% {
-                    opacity: 0;
-                    transform: scale(0) rotateZ(-180deg);
-                  }
-                  100% {
-                    opacity: 1;
-                    transform: scale(1) rotateZ(0deg);
-                  }
+                  0%   { opacity: 0; transform: scale(0.3) rotateZ(-20deg); }
+                  60%  { opacity: 1; transform: scale(1.12) rotateZ(4deg); }
+                  80%  { transform: scale(0.96) rotateZ(-2deg); }
+                  100% { opacity: 1; transform: scale(1) rotateZ(0deg); }
                 }
-                
+
                 @keyframes pulse {
                   0%, 100% { transform: scale(1); }
-                  50% { transform: scale(1.05); }
+                  50%       { transform: scale(1.06); }
                 }
-                
-                .shard-backpack {
+
+                @keyframes shardPopIn {
+                  0%   { opacity: 0; transform: scale(0.3) rotateZ(-20deg); }
+                  60%  { opacity: 1; transform: scale(1.15) rotateZ(5deg); }
+                  80%  { transform: scale(0.95) rotateZ(-2deg); }
+                  100% { opacity: 1; transform: scale(1) rotateZ(0deg); }
+                }
+
+                /* FIX: persistent resource bar always visible at top */
+                .resource-bar {
                   position: fixed;
-                  top: 20px;
-                  right: 20px;
-                  display: flex;
-                  gap: 10px;
-                  flex-wrap: wrap;
-                  max-width: 200px;
-                  justify-content: flex-end;
-                  z-index: 1000;
-                }
-                
-                .shard {
-                  width: 40px;
-                  height: 40px;
-                  border-radius: 50%;
-                  animation: shardAppear 1s ease-out;
-                  box-shadow: 0 0 15px currentColor;
+                  top: 0; left: 0; right: 0;
+                  background: rgba(0, 0, 0, 0.55);
+                  backdrop-filter: blur(10px);
+                  -webkit-backdrop-filter: blur(10px);
                   display: flex;
                   align-items: center;
                   justify-content: center;
+                  gap: 16px;
+                  padding: 10px 20px;
+                  z-index: 999;
+                  border-bottom: 1px solid rgba(255,255,255,0.1);
+                }
+
+                .resource-bar-label {
+                  color: rgba(255,255,255,0.5);
+                  font-family: "Space Grotesk", sans-serif;
                   font-size: 0.8em;
+                  letter-spacing: 2px;
+                  text-transform: uppercase;
+                }
+
+                .shard-backpack {
+                  position: fixed;
+                  top: 60px;
+                  right: 20px;
+                  display: flex;
+                  gap: 8px;
+                  flex-wrap: wrap;
+                  max-width: 180px;
+                  justify-content: flex-end;
+                  z-index: 1000;
+                }
+
+                .shard {
+                  width: 38px;
+                  height: 38px;
+                  border-radius: 50%;
+                  /* FIX: spring cubic-bezier + stagger via animation-delay on element */
+                  animation: shardAppear 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+                  box-shadow: 0 0 12px currentColor;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 0.75em;
                   font-weight: bold;
                   color: white;
+                  font-family: "Space Grotesk", sans-serif;
                 }
-                
+
                 .content {
                   max-width: 900px;
-                  margin: 80px auto 40px;
+                  margin: 20px auto 60px;
                   animation: slideIn 0.6s ease-out;
                 }
-                
+
                 .level-title {
                   font-family: "Space Grotesk", sans-serif;
                   font-size: 2.5em;
                   font-weight: 700;
                   text-align: center;
-                  margin-bottom: 10px;
+                  margin-bottom: 8px;
                   letter-spacing: 4px;
                   color: ${getTextColor()};
                 }
-                
+
                 .level-subtitle {
                   text-align: center;
-                  font-size: 1em;
+                  font-size: 0.95em;
                   color: ${getTextColor()};
-                  opacity: 0.8;
+                  opacity: 0.7;
                   margin-bottom: 30px;
+                  font-family: "Space Grotesk", sans-serif;
+                  letter-spacing: 1px;
                 }
-                
-                .source-link {
-                  display: inline-block;
+
+                /* resource bar source link style */
+                .source-link-bar {
+                  display: inline-flex;
+                  align-items: center;
+                  gap: 6px;
                   background: ${getAccentColor()};
                   color: ${currentLevel < 3 ? '#000' : '#fff'};
-                  padding: 12px 24px;
+                  padding: 7px 18px;
                   text-decoration: none;
                   border-radius: 4px;
                   font-family: "Space Grotesk", sans-serif;
                   font-weight: 700;
-                  margin-bottom: 30px;
-                  transition: all 0.3s ease;
-                  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                  font-size: 0.85em;
+                  letter-spacing: 1px;
+                  transition: all 0.25s ease;
+                  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
                 }
-                
-                .source-link:hover {
-                  transform: translateY(-2px);
-                  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+
+                .source-link-bar:hover {
+                  transform: translateY(-1px);
+                  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+                  opacity: 0.92;
                 }
-                
+
                 .section-card {
-                  background: ${currentLevel < 3 ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.6)'};
+                  background: ${currentLevel < 3 ? 'rgba(255,255,255,0.88)' : 'rgba(0,0,0,0.55)'};
                   padding: 40px;
-                  border-radius: 8px;
-                  margin: 30px 0;
+                  border-radius: 10px;
+                  margin: 20px 0;
                   border: 2px solid ${getAccentColor()};
                   box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+                  backdrop-filter: blur(4px);
                 }
-                
+
                 .section-number {
                   font-family: "Space Grotesk", sans-serif;
-                  font-size: 0.9em;
+                  font-size: 0.85em;
                   color: ${getAccentColor()};
                   text-transform: uppercase;
                   letter-spacing: 2px;
-                  margin-bottom: 10px;
+                  margin-bottom: 8px;
                 }
-                
+
                 .section-title {
                   font-family: "Space Grotesk", sans-serif;
                   font-size: 1.8em;
                   font-weight: 700;
                   color: ${getTextColor()};
-                  margin: 15px 0 25px 0;
+                  margin: 12px 0 22px 0;
                 }
-                
+
                 .section-question {
                   font-size: 1.2em;
                   line-height: 1.8;
                   color: ${getTextColor()};
-                  margin-bottom: 25px;
+                  margin-bottom: 22px;
                   font-style: italic;
                 }
-                
+
                 .input-group {
                   display: flex;
                   gap: 10px;
-                  margin-top: 25px;
+                  margin-top: 22px;
                 }
-                
+
                 .answer-input {
                   flex: 1;
                   padding: 14px 20px;
@@ -537,15 +719,15 @@
                   font-family: "Space Grotesk", sans-serif;
                   background: ${currentLevel < 3 ? 'white' : '#1a1a1a'};
                   color: ${getTextColor()};
-                  transition: all 0.3s ease;
+                  transition: box-shadow 0.25s ease, transform 0.25s ease;
                 }
-                
+
                 .answer-input:focus {
                   outline: none;
-                  box-shadow: 0 0 0 3px ${getAccentColor()}33;
+                  box-shadow: 0 0 0 3px ${getAccentColor()}44;
                   transform: translateY(-2px);
                 }
-                
+
                 .submit-btn {
                   padding: 14px 30px;
                   background: ${getAccentColor()};
@@ -556,72 +738,95 @@
                   font-weight: 700;
                   font-size: 1em;
                   cursor: pointer;
-                  transition: all 0.3s ease;
+                  transition: transform 0.2s ease, box-shadow 0.2s ease;
                   text-transform: uppercase;
                   letter-spacing: 2px;
                 }
-                
+
                 .submit-btn:hover {
                   transform: translateY(-3px);
                   box-shadow: 0 6px 20px rgba(0,0,0,0.3);
                 }
-                
+
                 .submit-btn:active {
                   transform: translateY(-1px);
                 }
-                
+
                 .feedback {
-                  margin-top: 20px;
-                  padding: 15px;
+                  margin-top: 18px;
+                  padding: 14px;
                   border-radius: 4px;
                   font-family: "Space Grotesk", sans-serif;
                   font-weight: 700;
                   text-align: center;
                   min-height: 20px;
                 }
-                
+
                 .feedback.correct {
                   color: #22c55e;
                   background: rgba(34, 197, 94, 0.1);
                 }
-                
+
                 .feedback.incorrect {
                   color: ${currentLevel < 3 ? '#dc2626' : '#ff69b4'};
                   background: rgba(220, 38, 38, 0.1);
                 }
-                
+
                 .progress-bar {
                   position: fixed;
-                  bottom: 0;
-                  left: 0;
-                  height: 6px;
+                  bottom: 0; left: 0;
+                  height: 5px;
                   background: ${getAccentColor()};
                   width: ${progress}%;
-                  transition: width 0.5s ease;
+                  transition: width 0.8s ease, background 1.2s ease;
                   z-index: 100;
                 }
               `}</style>
 
+              {/* FIX: persistent resource bar — always visible regardless of section */}
+              <div className="resource-bar">
+                <span className="resource-bar-label">{currentLevelData.name}</span>
+                {currentLevelData.sourceLink !== '#' ? (
+                  <a
+                    href={currentLevelData.sourceLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="source-link-bar"
+                  >
+                    📖 VIEW {currentLevelData.sourceLabel.toUpperCase()}
+                  </a>
+                ) : (
+                  <span style={{
+                    fontFamily: '"Space Grotesk", sans-serif',
+                    fontSize: '0.8em',
+                    color: 'rgba(255,255,255,0.35)',
+                    letterSpacing: '1px'
+                  }}>
+                    {currentLevelData.sourceLabel} — Coming Soon
+                  </span>
+                )}
+              </div>
+
+              {/* FIX: shard backpack with staggered animation-delay per index */}
               <div className="shard-backpack">
                 {collectedShards.map((shard, idx) => (
-                  <div key={idx} className="shard" style={{ backgroundColor: shard.color }}>
+                  <div
+                    key={idx}
+                    className="shard"
+                    style={{
+                      backgroundColor: shard.color,
+                      animationDelay: `${idx * 80}ms`
+                    }}
+                    title={shard.name}
+                  >
                     {idx + 1}
                   </div>
                 ))}
               </div>
 
               <div className="content">
-                {currentSection === 0 && (
-                  <>
-                    <div className="level-title">{currentLevelData.name}</div>
-                    <div className="level-subtitle">Level {currentLevel + 1} of {levels.length}</div>
-                    <div style={{ textAlign: 'center' }}>
-                      <a href={currentLevelData.sourceLink} target="_blank" rel="noopener noreferrer" className="source-link">
-                        📖 VIEW {currentLevelData.sourceLabel.toUpperCase()}
-                      </a>
-                    </div>
-                  </>
-                )}
+                <div className="level-title">{currentLevelData.name}</div>
+                <div className="level-subtitle">Level {currentLevel + 1} of {levels.length} &nbsp;·&nbsp; Section {currentSection + 1} of {currentLevelData.sections.length}</div>
 
                 <div className="section-card">
                   <div className="section-number">
@@ -636,7 +841,7 @@
                       className="answer-input"
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
-                      onKeyPress={handleKeyPress}
+                      onKeyDown={handleKeyDown}
                       placeholder="Enter your answer..."
                     />
                     <button className="submit-btn" onClick={handleSubmitAnswer}>
@@ -652,34 +857,47 @@
                 </div>
               </div>
 
+              {/* Shard collection overlay */}
               {showShard && (
                 <div style={{
                   position: 'fixed',
-                  left: '50%',
-                  top: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  textAlign: 'center',
-                  zIndex: '2000',
-                  animation: 'slideIn 0.5s ease-out'
+                  inset: 0,
+                  background: 'rgba(0,0,0,0.6)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 2000,
+                  animation: 'slideIn 0.4s ease-out'
                 }}>
                   <div style={{
                     width: '150px',
                     height: '150px',
                     borderRadius: '50%',
-                    background: `radial-gradient(circle at 30% 30%, ${shardColors[currentLevel]}, ${shardColors[currentLevel]}aa)`,
-                    margin: '0 auto 30px',
-                    boxShadow: `0 0 50px ${shardColors[currentLevel]}`,
-                    animation: 'pulse 2s ease-in-out infinite'
+                    background: `radial-gradient(circle at 35% 35%, ${shardColors[currentLevel]}, ${shardColors[currentLevel]}99)`,
+                    margin: '0 auto 28px',
+                    boxShadow: `0 0 60px ${shardColors[currentLevel]}cc`,
+                    animation: 'shardPopIn 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both, pulse 2s ease-in-out 0.7s infinite'
                   }}></div>
                   <div style={{
                     fontFamily: '"Space Grotesk", sans-serif',
-                    fontSize: '1.5em',
+                    fontSize: '1.4em',
                     fontWeight: '700',
                     color: shardColors[currentLevel],
-                    textShadow: `0 0 20px ${shardColors[currentLevel]}77`,
-                    letterSpacing: '2px'
+                    textShadow: `0 0 24px ${shardColors[currentLevel]}88`,
+                    letterSpacing: '2px',
+                    textAlign: 'center'
                   }}>
                     {currentLevelData.shardName}
+                  </div>
+                  <div style={{
+                    marginTop: '12px',
+                    fontFamily: '"Space Grotesk", sans-serif',
+                    fontSize: '0.85em',
+                    color: 'rgba(255,255,255,0.5)',
+                    letterSpacing: '1px'
+                  }}>
+                    COLLECTED
                   </div>
                 </div>
               )}
