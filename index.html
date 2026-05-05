@@ -12,10 +12,123 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState } = React;
-
+        const { useState, useEffect, useRef } = React;
         const lerp = (a, b, t) => a + (b - a) * t;
 
+        // ─── HOMEPAGE ─────────────────────────────────────────────────────────
+        const HomePage = ({ onEnter }) => {
+          const [glitch, setGlitch]     = useState(false);
+          const [crackLvl, setCrackLvl] = useState(0);
+          const [broken, setBroken]     = useState(false);
+          const [clicked, setClicked]   = useState(false);
+          const [pixels, setPixels]     = useState([]);
+
+          useEffect(() => {
+            const fire = () => {
+              setGlitch(true);
+              setPixels(Array.from({length:10}, (_,i) => ({
+                id: Date.now()+i,
+                left: Math.random()*100,
+                top: Math.random()*100,
+                w: 20+Math.random()*80,
+                h: 2+Math.random()*6,
+                color: ['#f00','#00f','#0f0','#ff0','#0ff'][Math.floor(Math.random()*5)],
+                opacity: 0.1+Math.random()*0.25,
+              })));
+              setTimeout(() => { setGlitch(false); setPixels([]); }, 250+Math.random()*350);
+            };
+            fire();
+            const id = setInterval(fire, 2200+Math.random()*2000);
+            return () => clearInterval(id);
+          }, []);
+
+          const handleClick = () => {
+            if (clicked) return;
+            setClicked(true);
+            setCrackLvl(1);
+            setTimeout(() => setCrackLvl(2), 380);
+            setTimeout(() => setCrackLvl(3), 800);
+            setTimeout(() => setBroken(true), 1300);
+            setTimeout(() => onEnter(), 2000);
+          };
+
+          return (
+            <div onClick={handleClick} style={{
+              width:'100vw', height:'100vh', background:'#fff',
+              display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
+              cursor: clicked ? 'default' : 'pointer', overflow:'hidden', position:'relative', userSelect:'none',
+            }}>
+              <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&family=Crimson+Text:ital@1&display=swap');
+                @keyframes gl1 { 0%,100%{clip-path:inset(0 0 95% 0);transform:translate(-5px,0)} 25%{clip-path:inset(25% 0 55% 0);transform:translate(5px,0)} 50%{clip-path:inset(60% 0 15% 0);transform:translate(-3px,0)} 75%{clip-path:inset(10% 0 75% 0);transform:translate(4px,0)} }
+                @keyframes gl2 { 0%,100%{clip-path:inset(45% 0 35% 0);transform:translate(4px,0);color:#e00} 33%{clip-path:inset(15% 0 65% 0);transform:translate(-4px,0);color:#00e} 66%{clip-path:inset(75% 0 5% 0);transform:translate(3px,0);color:#0a0} }
+                @keyframes flicker { 0%,100%{opacity:1} 50%{opacity:0.93} 75%{opacity:0.97} }
+                @keyframes crackShake1 { 0%,100%{transform:translate(0,0) rotate(0)} 25%{transform:translate(-3px,2px) rotate(-0.3deg)} 75%{transform:translate(3px,-2px) rotate(0.3deg)} }
+                @keyframes crackShake2 { 0%,100%{transform:translate(0,0) rotate(0)} 25%{transform:translate(-4px,3px) rotate(-0.5deg)} 75%{transform:translate(4px,-3px) rotate(0.5deg)} }
+                @keyframes crackShake3 { 0%,100%{transform:translate(0,0) rotate(0)} 25%{transform:translate(-6px,4px) rotate(-0.8deg)} 75%{transform:translate(6px,-4px) rotate(0.8deg)} }
+                @keyframes shatter { 0%{opacity:1;transform:scale(1);filter:brightness(1)} 40%{opacity:1;transform:scale(1.04);filter:brightness(4)} 100%{opacity:0;transform:scale(1.18);filter:brightness(6) blur(10px)} }
+                @keyframes hintPulse { 0%,100%{opacity:0.45} 50%{opacity:0.75} }
+                .title-wrap { position:relative; text-align:center; }
+                .eden-title { font-family:'Space Grotesk',sans-serif; font-size:clamp(3.5em,12vw,8em); font-weight:700; letter-spacing:0.18em; color:#111; line-height:1; position:relative; }
+                .gl-layer { position:absolute; inset:0; font-family:'Space Grotesk',sans-serif; font-size:1em; font-weight:700; letter-spacing:0.18em; color:#111; line-height:1; }
+                .glitch-on .gl-layer.a { animation:gl1 0.25s steps(1) infinite; color:#f00; mix-blend-mode:multiply; }
+                .glitch-on .gl-layer.b { animation:gl2 0.25s steps(1) infinite; mix-blend-mode:multiply; }
+                .crack-1 { animation:crackShake1 0.14s ease-in-out infinite; }
+                .crack-2 { animation:crackShake2 0.09s ease-in-out infinite; }
+                .crack-3 { animation:crackShake3 0.055s ease-in-out infinite; }
+                .shatter  { animation:shatter 0.65s ease-out forwards; }
+              `}</style>
+
+              <div style={{ position:'absolute',inset:0,pointerEvents:'none',zIndex:10, backgroundImage:'repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.025) 2px,rgba(0,0,0,0.025) 4px)', animation:'flicker 5s ease-in-out infinite' }} />
+
+              {pixels.map(p => (
+                <div key={p.id} style={{ position:'absolute',left:`${p.left}%`,top:`${p.top}%`,width:`${p.w}px`,height:`${p.h}px`,background:p.color,opacity:p.opacity,pointerEvents:'none',zIndex:8 }} />
+              ))}
+
+              <div className={`title-wrap ${broken?'shatter':crackLvl>=1?`crack-${crackLvl}`:''}`} style={{ zIndex:5 }}>
+                <div style={{ fontFamily:'Space Grotesk,sans-serif',fontSize:'0.65em',letterSpacing:'0.35em',color:'#ccc',marginBottom:'14px',animation:'hintPulse 3s ease-in-out infinite' }}>WELCOME TO</div>
+
+                <div className={`eden-title ${glitch?'glitch-on':''}`}>
+                  EDEN
+                  <span className="gl-layer a">EDEN</span>
+                  <span className="gl-layer b">EDEN</span>
+                </div>
+
+                <div style={{ fontFamily:'Crimson Text,serif',fontStyle:'italic',fontSize:'clamp(0.9em,2vw,1.25em)',color:'#aaa',marginTop:'16px',letterSpacing:'0.05em' }}>
+                  a place of perfect harmony
+                </div>
+
+                {crackLvl>=1&&<svg style={{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none',overflow:'visible'}}>
+                  <line x1="52%" y1="5%"  x2="56%" y2="45%" stroke="rgba(0,0,0,0.3)" strokeWidth="1.5"/>
+                  <line x1="56%" y1="45%" x2="51%" y2="72%" stroke="rgba(0,0,0,0.25)" strokeWidth="1.5"/>
+                  <line x1="56%" y1="45%" x2="71%" y2="42%" stroke="rgba(0,0,0,0.18)" strokeWidth="1"/>
+                </svg>}
+                {crackLvl>=2&&<svg style={{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none',overflow:'visible'}}>
+                  <line x1="28%" y1="8%"  x2="38%" y2="42%" stroke="rgba(0,0,0,0.28)" strokeWidth="1.5"/>
+                  <line x1="38%" y1="42%" x2="33%" y2="68%" stroke="rgba(0,0,0,0.22)" strokeWidth="1.5"/>
+                  <line x1="38%" y1="42%" x2="22%" y2="50%" stroke="rgba(0,0,0,0.16)" strokeWidth="1"/>
+                  <line x1="62%" y1="3%"  x2="68%" y2="38%" stroke="rgba(0,0,0,0.22)" strokeWidth="1"/>
+                  <line x1="68%" y1="38%" x2="76%" y2="58%" stroke="rgba(0,0,0,0.18)" strokeWidth="1"/>
+                </svg>}
+                {crackLvl>=3&&<svg style={{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none',overflow:'visible'}}>
+                  <line x1="18%" y1="28%" x2="44%" y2="54%" stroke="rgba(0,0,0,0.38)" strokeWidth="2"/>
+                  <line x1="44%" y1="54%" x2="28%" y2="82%" stroke="rgba(0,0,0,0.3)"  strokeWidth="2"/>
+                  <line x1="44%" y1="54%" x2="82%" y2="60%" stroke="rgba(0,0,0,0.28)" strokeWidth="1.5"/>
+                  <line x1="72%" y1="12%" x2="62%" y2="50%" stroke="rgba(0,0,0,0.32)" strokeWidth="1.5"/>
+                  <line x1="62%" y1="50%" x2="80%" y2="78%" stroke="rgba(0,0,0,0.28)" strokeWidth="1.5"/>
+                </svg>}
+              </div>
+
+              {!clicked && (
+                <div style={{ position:'absolute',bottom:'38px',fontFamily:'Space Grotesk,sans-serif',fontSize:'0.72em',letterSpacing:'0.22em',color:'#bbb',animation:'hintPulse 2.2s ease-in-out infinite' }}>
+                  [ CLICK ANYWHERE TO ENTER ]
+                </div>
+              )}
+            </div>
+          );
+        };
+
+        // ─── SCAVENGER HUNT ───────────────────────────────────────────────────
         const ScavengerHunt = () => {
           const [currentLevel, setCurrentLevel] = useState(0);
           const [currentSection, setCurrentSection] = useState(0);
@@ -28,230 +141,88 @@
           const levels = [
             {
               name: 'HTRNLAP',
-              color: 'level-0',
               shardName: 'Shard of Perspective',
               sourceLink: 'https://docs.google.com/document/d/1TJF1iBb4_BjXL-wNJEI_OIzMNOwrxsBChzopzfFlHrY/edit?usp=sharing',
               sourceLabel: 'Article',
               sections: [
-                {
-                  title: 'Four P\'s',
-                  question: 'Search the propaganda. Find the name of the platform that disseminates these lies.',
-                  answers: ['Angel77', 'angel77', 'ANGEL77']
-                },
-                {
-                  title: 'Perfect or Evil?',
-                  question: 'The propaganda uses emotionally charged words to make us believe their lies. Hunt for ONE word that Eden uses to make their society sound perfect, OR one that makes Nod seem evil.',
-                  answers: ['blessed', 'peaceful', 'shining', 'harmony', 'light', 'hatred', 'envy', 'savagery', 'destruction', 'desperation']
-                },
-                {
-                  title: 'Vague Reports',
-                  question: 'Notice how the article relies on vague, unnamed reports without expert testimony? Foster warns this is a common tactic in _________. (Hint: p.224)',
-                  answers: ['bad faith writing', 'Bad faith writing', 'BAD FAITH WRITING']
-                },
-                {
-                  title: 'When Was the Attack?',
-                  question: 'Foster notes that hard news journalism should have the Five Ws in the very first paragraph. Examine the first paragraph of "Nod\'s Aggression Calls for a United Eden" and identify the "when" of the most recent assault.',
-                  answers: ['March 29', 'march 29', 'March 29th']
-                },
-                {
-                  title: 'The Perspective Gate',
-                  question: 'Look at the pieces of the article that stand out to you. (Hint: You may need to visit How to Read Nonfiction Like a Professor!)',
-                  answers: ['the structure of a piece of writing affects its meaning', 'The structure of a piece of writing affects its meaning', 'structure affects meaning']
-                }
+                { title: "Four P's", question: 'Search the propaganda. Find the name of the platform that disseminates these lies.', answers: ['Angel77', 'angel77', 'ANGEL77'] },
+                { title: 'Perfect or Evil?', question: 'The propaganda uses emotionally charged words to make us believe their lies. Hunt for ONE word that Eden uses to make their society sound perfect, OR one that makes Nod seem evil.', answers: ['blessed', 'peaceful', 'shining', 'harmony', 'light', 'hatred', 'envy', 'savagery', 'destruction', 'desperation'] },
+                { title: 'Vague Reports', question: 'Notice how the article relies on vague, unnamed reports without expert testimony? Foster warns this is a common tactic in _________. (Hint: p.224)', answers: ['bad faith writing', 'Bad faith writing', 'BAD FAITH WRITING'] },
+                { title: 'When Was the Attack?', question: 'Foster notes that hard news journalism should have the Five Ws in the very first paragraph. Examine the first paragraph of "Nod\'s Aggression Calls for a United Eden" and identify the "when" of the most recent assault.', answers: ['March 29', 'march 29', 'March 29th'] },
+                { title: 'The Perspective Gate', question: 'Look at the pieces of the article that stand out to you. (Hint: You may need to visit How to Read Nonfiction Like a Professor!)', answers: ['the structure of a piece of writing affects its meaning', 'The structure of a piece of writing affects its meaning', 'structure affects meaning'] }
               ]
             },
             {
               name: '1984',
-              color: 'level-1',
               shardName: 'Shard of Language',
               sourceLink: 'https://docs.google.com/document/d/12PGpLeJxPuNLXdmQGuFlB1rOXYplWXegxc-QPeY_Lvs/edit?usp=sharing',
               sourceLabel: 'Archive',
               sections: [
-                {
-                  title: 'The People\'s Records',
-                  question: 'You\'ve infiltrated the Archives. Navigate to the People\'s Records. In this section, Eden records every citizen that has ever existed under their ID numbers. In the book 1984, O\'Brien functions as a perfect citizen who exists within the Inner Party. Based on the given records, enter the ID (E-###) of the citizen of Eden who mirrors O\'Brien\'s role in his dystopian world.',
-                  answers: ['E-016', '016', 'E016', '16']
-                },
-                {
-                  title: 'The Historical Records',
-                  question: 'In 1984, the Party constantly rewrites history to fit its agenda. In Eden\'s Archive, find the place where Eden documents how they change the past to shape people\'s memories.',
-                  answers: ['Historical Records', 'HISTORICAL RECORDS', 'historical records']
-                },
-                {
-                  title: 'The Language Gate',
-                  question: 'Decode the select OLDSPEAK words to reveal the hidden message.',
-                  answers: ['EDEN CONTROLS TRUTH LANGUAGE', 'eden controls truth language', 'Eden Controls Truth Language']
-                }
+                { title: "The People's Records", question: "You've infiltrated the Archives. Navigate to the People's Records. In this section, Eden records every citizen that has ever existed under their ID numbers. In the book 1984, O'Brien functions as a perfect citizen who exists within the Inner Party. Based on the given records, enter the ID (E-###) of the citizen of Eden who mirrors O'Brien's role in his dystopian world.", answers: ['E-016', '016', 'E016', '16'] },
+                { title: 'The Historical Records', question: "In 1984, the Party constantly rewrites history to fit its agenda. In Eden's Archive, find the place where Eden documents how they change the past to shape people's memories.", answers: ['Historical Records', 'HISTORICAL RECORDS', 'historical records'] },
+                { title: 'The Language Gate', question: 'Decode the select OLDSPEAK words to reveal the hidden message.', answers: ['EDEN CONTROLS TRUTH LANGUAGE', 'eden controls truth language', 'Eden Controls Truth Language'] }
               ]
             },
             {
-              name: 'The Handmaid\'s Tale',
-              color: 'level-2',
-              shardName: 'Shard of Individuality',
-              sourceLink: '#',
-              sourceLabel: 'Text',
+              name: "The Handmaid's Tale", shardName: 'Shard of Individuality', sourceLink: '#', sourceLabel: 'Text',
               sections: [
-                {
-                  title: '[Section 1 - In Development]',
-                  question: 'What is the primary form of control in this society?',
-                  answers: ['placeholder']
-                },
-                {
-                  title: '[Section 2 - In Development]',
-                  question: 'How do systems use identity to maintain power?',
-                  answers: ['placeholder']
-                },
-                {
-                  title: '[Section 3 - In Development]',
-                  question: 'What small acts of rebellion occur?',
-                  answers: ['placeholder']
-                }
+                { title: '[Section 1 - In Development]', question: 'What is the primary form of control in this society?', answers: ['placeholder'] },
+                { title: '[Section 2 - In Development]', question: 'How do systems use identity to maintain power?', answers: ['placeholder'] },
+                { title: '[Section 3 - In Development]', question: 'What small acts of rebellion occur?', answers: ['placeholder'] }
               ]
             },
             {
-              name: 'Ready Player One',
-              color: 'level-3',
-              shardName: 'Shard of Reality',
-              sourceLink: '#',
-              sourceLabel: 'Text',
+              name: 'Ready Player One', shardName: 'Shard of Reality', sourceLink: '#', sourceLabel: 'Text',
               sections: [
-                {
-                  title: '[Section 1 - In Development]',
-                  question: 'What is the escape from reality?',
-                  answers: ['placeholder']
-                },
-                {
-                  title: '[Section 2 - In Development]',
-                  question: 'How does virtual reality replace actual society?',
-                  answers: ['placeholder']
-                },
-                {
-                  title: '[Section 3 - In Development]',
-                  question: 'What are the consequences of this escape?',
-                  answers: ['placeholder']
-                },
-                {
-                  title: '[Section 4 - In Development]',
-                  question: 'Can we find truth in illusion?',
-                  answers: ['placeholder']
-                }
+                { title: '[Section 1 - In Development]', question: 'What is the escape from reality?', answers: ['placeholder'] },
+                { title: '[Section 2 - In Development]', question: 'How does virtual reality replace actual society?', answers: ['placeholder'] },
+                { title: '[Section 3 - In Development]', question: 'What are the consequences of this escape?', answers: ['placeholder'] },
+                { title: '[Section 4 - In Development]', question: 'Can we find truth in illusion?', answers: ['placeholder'] }
               ]
             },
             {
-              name: 'Propaganda & Media',
-              color: 'level-4',
-              shardName: 'Shard of Truth',
-              sourceLink: '#',
-              sourceLabel: 'Materials',
+              name: 'Propaganda & Media', shardName: 'Shard of Truth', sourceLink: '#', sourceLabel: 'Materials',
               sections: [
-                {
-                  title: '[Section 1 - In Development]',
-                  question: 'How is propaganda distinct from advertising?',
-                  answers: ['placeholder']
-                },
-                {
-                  title: '[Section 2 - In Development]',
-                  question: 'What techniques are used to influence public opinion?',
-                  answers: ['placeholder']
-                },
-                {
-                  title: '[Section 3 - In Development]',
-                  question: 'How do we identify bias in media?',
-                  answers: ['placeholder']
-                },
-                {
-                  title: '[Section 4 - In Development]',
-                  question: 'What is the responsibility of critical consumers?',
-                  answers: ['placeholder']
-                }
+                { title: '[Section 1 - In Development]', question: 'How is propaganda distinct from advertising?', answers: ['placeholder'] },
+                { title: '[Section 2 - In Development]', question: 'What techniques are used to influence public opinion?', answers: ['placeholder'] },
+                { title: '[Section 3 - In Development]', question: 'How do we identify bias in media?', answers: ['placeholder'] },
+                { title: '[Section 4 - In Development]', question: 'What is the responsibility of critical consumers?', answers: ['placeholder'] }
               ]
             },
             {
-              name: 'Dystopian Elements',
-              color: 'level-5',
-              shardName: 'Shard of Light',
-              sourceLink: '#',
-              sourceLabel: 'Analysis',
+              name: 'Dystopian Elements', shardName: 'Shard of Light', sourceLink: '#', sourceLabel: 'Analysis',
               sections: [
-                {
-                  title: '[Section 1 - In Development]',
-                  question: 'What defines a dystopian society?',
-                  answers: ['placeholder']
-                },
-                {
-                  title: '[Section 2 - In Development]',
-                  question: 'How do these authors warn us about the future?',
-                  answers: ['placeholder']
-                },
-                {
-                  title: '[Section 3 - In Development]',
-                  question: 'What patterns emerge across dystopian literature?',
-                  answers: ['placeholder']
-                },
-                {
-                  title: '[Section 4 - In Development]',
-                  question: 'What hope exists within these dark narratives?',
-                  answers: ['placeholder']
-                }
+                { title: '[Section 1 - In Development]', question: 'What defines a dystopian society?', answers: ['placeholder'] },
+                { title: '[Section 2 - In Development]', question: 'How do these authors warn us about the future?', answers: ['placeholder'] },
+                { title: '[Section 3 - In Development]', question: 'What patterns emerge across dystopian literature?', answers: ['placeholder'] },
+                { title: '[Section 4 - In Development]', question: 'What hope exists within these dark narratives?', answers: ['placeholder'] }
               ]
             },
             {
-              name: 'Synthesis & Escape',
-              color: 'level-6',
-              shardName: 'Shard of Enlightenment',
-              sourceLink: '#',
-              sourceLabel: 'Reflection',
+              name: 'Synthesis & Escape', shardName: 'Shard of Enlightenment', sourceLink: '#', sourceLabel: 'Reflection',
               sections: [
-                {
-                  title: '[Section 1 - In Development]',
-                  question: 'How are all these texts connected?',
-                  answers: ['placeholder']
-                },
-                {
-                  title: '[Section 2 - In Development]',
-                  question: 'What is the cost of awareness?',
-                  answers: ['placeholder']
-                },
-                {
-                  title: '[Section 3 - In Development]',
-                  question: 'How do we break free from systems of control?',
-                  answers: ['placeholder']
-                },
-                {
-                  title: '[Section 4 - In Development]',
-                  question: 'What does enlightenment truly mean?',
-                  answers: ['placeholder']
-                }
+                { title: '[Section 1 - In Development]', question: 'How are all these texts connected?', answers: ['placeholder'] },
+                { title: '[Section 2 - In Development]', question: 'What is the cost of awareness?', answers: ['placeholder'] },
+                { title: '[Section 3 - In Development]', question: 'How do we break free from systems of control?', answers: ['placeholder'] },
+                { title: '[Section 4 - In Development]', question: 'What does enlightenment truly mean?', answers: ['placeholder'] }
               ]
             }
           ];
 
-          const shardColors = [
-            '#4A90D9', '#3A6FBF', '#6A3FAF', '#9B2080', '#C0201C', '#8B0000', '#CC0000'
-          ];
+          const shardColors = ['#4A90D9', '#3A6FBF', '#6A3FAF', '#9B2080', '#C0201C', '#8B0000', '#CC0000'];
 
           const handleSubmitAnswer = () => {
             const currentLevelData = levels[currentLevel];
             const currentSectionData = currentLevelData.sections[currentSection];
-
             const normalizedInput = inputValue.toLowerCase().trim();
-            const isCorrect = currentSectionData.answers.some(
-              answer => answer.toLowerCase().trim() === normalizedInput
-            );
+            const isCorrect = currentSectionData.answers.some(answer => answer.toLowerCase().trim() === normalizedInput);
 
             if (isCorrect) {
               setFeedback('✓ Correct!');
-
               if (currentSection === currentLevelData.sections.length - 1) {
                 setShowShard(true);
                 setTimeout(() => {
-                  // FIX: use functional updater to avoid stale closure
-                  setCollectedShards(prev => [...prev, {
-                    name: currentLevelData.shardName,
-                    level: currentLevel,
-                    color: shardColors[currentLevel]
-                  }]);
-
+                  setCollectedShards(prev => [...prev, { name: currentLevelData.shardName, level: currentLevel, color: shardColors[currentLevel] }]);
                   if (currentLevel === levels.length - 1) {
                     setShowCrystal(true);
                   } else {
@@ -264,257 +235,96 @@
                 }, 2000);
               } else {
                 setFeedback('✓ Correct! Moving to next question...');
-                setTimeout(() => {
-                  setCurrentSection(currentSection + 1);
-                  setInputValue('');
-                  setFeedback('');
-                }, 1500);
+                setTimeout(() => { setCurrentSection(currentSection + 1); setInputValue(''); setFeedback(''); }, 1500);
               }
             } else {
               setFeedback('✗ Not quite. Try again or check the source material.');
             }
           };
 
-          // FIX: replaced deprecated onKeyPress with onKeyDown
-          const handleKeyDown = (e) => {
-            if (e.key === 'Enter') {
-              handleSubmitAnswer();
-            }
-          };
+          const handleKeyDown = (e) => { if (e.key === 'Enter') handleSubmitAnswer(); };
 
-          // Pure neutral: white → gray → black, no hue tint at all
           const getBackgroundGradient = () => {
-            const t        = currentLevel / Math.max(levels.length - 1, 1);
-            const lightTop = Math.round(lerp(100, 8, t));
-            const lightBot = Math.round(lerp(93, 2, t));
-            return `linear-gradient(160deg, hsl(0,0%,${lightTop}%) 0%, hsl(0,0%,${lightBot}%) 100%)`;
+            const t = currentLevel / Math.max(levels.length - 1, 1);
+            return `linear-gradient(160deg, hsl(0,0%,${Math.round(lerp(100,8,t))}%) 0%, hsl(0,0%,${Math.round(lerp(93,2,t))}%) 100%)`;
           };
-
-          const getTextColor = () => {
-            // Switch to light text once background gets dark enough (level 3+)
-            return currentLevel < 3 ? '#111111' : '#f0f0f0';
-          };
-
+          const getTextColor = () => currentLevel < 3 ? '#111111' : '#f0f0f0';
           const getAccentColor = () => {
-            // Go blue(215°) → purple(270°) → red(360°) — the short clockwise path avoids green
-            const t   = currentLevel / Math.max(levels.length - 1, 1);
-            const hue = Math.round(lerp(215, 360, t)) % 360;
-            const sat = 85;
-            const lit = Math.round(lerp(50, 42, t));
-            return `hsl(${hue}, ${sat}%, ${lit}%)`;
+            const t = currentLevel / Math.max(levels.length - 1, 1);
+            return `hsl(${Math.round(lerp(215,360,t))%360}, 85%, ${Math.round(lerp(50,42,t))}%)`;
           };
 
           if (showCrystal) {
             const CrystalScene = () => {
               const canvasRef = React.useRef(null);
-              const [phase, setPhase] = React.useState('swirl'); // swirl | merge | crystal
+              const [phase, setPhase] = React.useState('swirl');
               const frameRef = React.useRef(0);
               const startRef = React.useRef(null);
-
               const SHARD_COLORS = ['#4A90D9','#5B5FD9','#7B3FBF','#A02090','#C02040','#C83020','#CC1010'];
-              const TOTAL_SWIRL  = 2800; // ms orbiting
-              const TOTAL_MERGE  = 900;  // ms rushing inward
-              const TOTAL_CRYSTAL = 1200; // ms crystal forming
 
               React.useEffect(() => {
-                const canvas = canvasRef.current;
-                if (!canvas) return;
+                const canvas = canvasRef.current; if (!canvas) return;
                 const ctx = canvas.getContext('2d');
-                const W = canvas.width = 500;
-                const H = canvas.height = 500;
-                const cx = W / 2, cy = H / 2;
-                const N = 7;
+                const W = canvas.width = 500, H = canvas.height = 500, cx = W/2, cy = H/2;
+                const shards = SHARD_COLORS.map((color, i) => ({ color, angleOffset: (i/7)*Math.PI*2, orbitR: 160, size: 22 }));
+                const easeIn = t => t*t*t, easeOut = t => 1-Math.pow(1-t,3);
 
-                // Each shard: angle offset, orbit radius, size
-                const shards = SHARD_COLORS.map((color, i) => ({
-                  color,
-                  angleOffset: (i / N) * Math.PI * 2,
-                  orbitR: 160,
-                  size: 22,
-                }));
-
-                const easeIn  = t => t * t * t;
-                const easeOut = t => 1 - Math.pow(1 - t, 3);
-                const easeInOut = t => t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2;
-
-                // draw a hexagon shard
                 const drawShard = (ctx, x, y, size, color, alpha) => {
-                  ctx.save();
-                  ctx.globalAlpha = alpha;
-                  ctx.beginPath();
-                  for (let i = 0; i < 6; i++) {
-                    const a = (i / 6) * Math.PI * 2 - Math.PI / 6;
-                    const px = x + size * Math.cos(a);
-                    const py = y + size * Math.sin(a);
-                    i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
-                  }
-                  ctx.closePath();
-                  ctx.fillStyle = color;
-                  ctx.shadowColor = color;
-                  ctx.shadowBlur = 18;
-                  ctx.fill();
-                  ctx.restore();
+                  ctx.save(); ctx.globalAlpha = alpha; ctx.beginPath();
+                  for (let i=0;i<6;i++){const a=(i/6)*Math.PI*2-Math.PI/6;i===0?ctx.moveTo(x+size*Math.cos(a),y+size*Math.sin(a)):ctx.lineTo(x+size*Math.cos(a),y+size*Math.sin(a));}
+                  ctx.closePath(); ctx.fillStyle=color; ctx.shadowColor=color; ctx.shadowBlur=18; ctx.fill(); ctx.restore();
                 };
 
-                // draw final white crystal (hexagon with inner glow)
                 const drawCrystal = (ctx, scale, glowPulse) => {
-                  ctx.save();
-                  ctx.translate(cx, cy);
-
-                  // outer glow layers
-                  [80, 50, 30].forEach((blur, i) => {
-                    ctx.beginPath();
-                    const r = 70 * scale;
-                    for (let j = 0; j < 6; j++) {
-                      const a = (j / 6) * Math.PI * 2 - Math.PI / 6;
-                      j === 0 ? ctx.moveTo(r * Math.cos(a), r * Math.sin(a))
-                               : ctx.lineTo(r * Math.cos(a), r * Math.sin(a));
-                    }
-                    ctx.closePath();
-                    ctx.shadowColor = `rgba(255,255,255,${0.4 + glowPulse * 0.3})`;
-                    ctx.shadowBlur = blur * (1 + glowPulse * 0.4);
-                    ctx.fillStyle = `rgba(255,255,255,${0.08 + i * 0.04})`;
-                    ctx.fill();
+                  ctx.save(); ctx.translate(cx,cy);
+                  [80,50,30].forEach(blur=>{
+                    ctx.beginPath(); const r=70*scale;
+                    for(let j=0;j<6;j++){const a=(j/6)*Math.PI*2-Math.PI/6;j===0?ctx.moveTo(r*Math.cos(a),r*Math.sin(a)):ctx.lineTo(r*Math.cos(a),r*Math.sin(a));}
+                    ctx.closePath(); ctx.shadowColor=`rgba(255,255,255,${0.4+glowPulse*0.3})`; ctx.shadowBlur=blur*(1+glowPulse*0.4); ctx.fillStyle='rgba(255,255,255,0.08)'; ctx.fill();
                   });
-
-                  // solid crystal body
-                  ctx.beginPath();
-                  const r = 65 * scale;
-                  for (let j = 0; j < 6; j++) {
-                    const a = (j / 6) * Math.PI * 2 - Math.PI / 6;
-                    j === 0 ? ctx.moveTo(r * Math.cos(a), r * Math.sin(a))
-                             : ctx.lineTo(r * Math.cos(a), r * Math.sin(a));
-                  }
+                  ctx.beginPath(); const r=65*scale;
+                  for(let j=0;j<6;j++){const a=(j/6)*Math.PI*2-Math.PI/6;j===0?ctx.moveTo(r*Math.cos(a),r*Math.sin(a)):ctx.lineTo(r*Math.cos(a),r*Math.sin(a));}
                   ctx.closePath();
-                  const grad = ctx.createRadialGradient(-15 * scale, -15 * scale, 0, 0, 0, r);
-                  grad.addColorStop(0, 'rgba(255,255,255,1)');
-                  grad.addColorStop(0.5, 'rgba(220,235,255,0.95)');
-                  grad.addColorStop(1, 'rgba(180,210,255,0.85)');
-                  ctx.fillStyle = grad;
-                  ctx.shadowColor = 'rgba(255,255,255,0.9)';
-                  ctx.shadowBlur = 40 + glowPulse * 30;
-                  ctx.fill();
-
-                  // inner facet lines
-                  ctx.globalAlpha = 0.25;
-                  ctx.strokeStyle = 'white';
-                  ctx.lineWidth = 1;
-                  for (let j = 0; j < 6; j++) {
-                    const a = (j / 6) * Math.PI * 2 - Math.PI / 6;
-                    ctx.beginPath();
-                    ctx.moveTo(0, 0);
-                    ctx.lineTo(r * Math.cos(a), r * Math.sin(a));
-                    ctx.stroke();
-                  }
-
+                  const grad=ctx.createRadialGradient(-15*scale,-15*scale,0,0,0,r);
+                  grad.addColorStop(0,'rgba(255,255,255,1)'); grad.addColorStop(0.5,'rgba(220,235,255,0.95)'); grad.addColorStop(1,'rgba(180,210,255,0.85)');
+                  ctx.fillStyle=grad; ctx.shadowColor='rgba(255,255,255,0.9)'; ctx.shadowBlur=40+glowPulse*30; ctx.fill();
+                  ctx.globalAlpha=0.25; ctx.strokeStyle='white'; ctx.lineWidth=1;
+                  for(let j=0;j<6;j++){const a=(j/6)*Math.PI*2-Math.PI/6;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(r*Math.cos(a),r*Math.sin(a));ctx.stroke();}
                   ctx.restore();
                 };
 
                 let currentPhase = 'swirl';
-
-                const animate = (ts) => {
+                const animate = ts => {
                   if (!startRef.current) startRef.current = ts;
                   const elapsed = ts - startRef.current;
-
-                  ctx.clearRect(0, 0, W, H);
-
-                  // background
-                  ctx.fillStyle = '#000';
-                  ctx.fillRect(0, 0, W, H);
-
-                  if (currentPhase === 'swirl') {
-                    const t = Math.min(elapsed / TOTAL_SWIRL, 1);
-                    // orbit radius shrinks slightly over time to build tension
-                    const orbitR = 160 - 30 * easeIn(t);
-                    const spinSpeed = 1.5 + t * 2; // accelerates
-
-                    shards.forEach((s, i) => {
-                      const angle = s.angleOffset + (elapsed / 1000) * spinSpeed;
-                      const x = cx + orbitR * Math.cos(angle);
-                      const y = cy + orbitR * Math.sin(angle);
-                      drawShard(ctx, x, y, s.size, s.color, 0.85 + 0.15 * Math.sin(elapsed / 300 + i));
-                    });
-
-                    if (t >= 1) {
-                      currentPhase = 'merge';
-                      startRef.current = ts;
-                      setPhase('merge');
-                    }
-
-                  } else if (currentPhase === 'merge') {
-                    const t = Math.min(elapsed / TOTAL_MERGE, 1);
-                    const ease = easeIn(t);
-
-                    shards.forEach((s, i) => {
-                      // last angle from swirl end
-                      const baseAngle = s.angleOffset + (TOTAL_SWIRL / 1000) * 3.5;
-                      const angle = baseAngle + t * Math.PI * 0.5;
-                      const orbitR = 130 * (1 - ease);
-                      const x = cx + orbitR * Math.cos(angle);
-                      const y = cy + orbitR * Math.sin(angle);
-                      const alpha = 1 - ease * 0.9;
-                      const size  = s.size * (1 - ease * 0.6);
-                      drawShard(ctx, x, y, size, s.color, alpha);
-                    });
-
-                    // central flash as they converge
-                    if (t > 0.6) {
-                      const flashT = (t - 0.6) / 0.4;
-                      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 80 * flashT);
-                      grad.addColorStop(0, `rgba(255,255,255,${flashT * 0.9})`);
-                      grad.addColorStop(1, 'rgba(255,255,255,0)');
-                      ctx.fillStyle = grad;
-                      ctx.fillRect(0, 0, W, H);
-                    }
-
-                    if (t >= 1) {
-                      currentPhase = 'crystal';
-                      startRef.current = ts;
-                      setPhase('crystal');
-                    }
-
-                  } else if (currentPhase === 'crystal') {
-                    const t = Math.min(elapsed / TOTAL_CRYSTAL, 1);
-                    const scale = easeOut(t);
-                    const glowPulse = Math.sin(elapsed / 600) * 0.5 + 0.5;
-                    drawCrystal(ctx, scale, glowPulse);
+                  ctx.clearRect(0,0,W,H); ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
+                  if (currentPhase==='swirl') {
+                    const t=Math.min(elapsed/2800,1), orbitR=160-30*easeIn(t), spd=1.5+t*2;
+                    shards.forEach((s,i)=>{const a=s.angleOffset+(elapsed/1000)*spd;drawShard(ctx,cx+orbitR*Math.cos(a),cy+orbitR*Math.sin(a),s.size,s.color,0.85+0.15*Math.sin(elapsed/300+i));});
+                    if(t>=1){currentPhase='merge';startRef.current=ts;setPhase('merge');}
+                  } else if (currentPhase==='merge') {
+                    const t=Math.min(elapsed/900,1),ease=easeIn(t);
+                    shards.forEach((s,i)=>{const ba=s.angleOffset+(2800/1000)*3.5;const a=ba+t*Math.PI*0.5;const orbitR=130*(1-ease);drawShard(ctx,cx+orbitR*Math.cos(a),cy+orbitR*Math.sin(a),s.size*(1-ease*0.6),s.color,1-ease*0.9);});
+                    if(t>0.6){const ft=(t-0.6)/0.4;const g=ctx.createRadialGradient(cx,cy,0,cx,cy,80*ft);g.addColorStop(0,`rgba(255,255,255,${ft*0.9})`);g.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+                    if(t>=1){currentPhase='crystal';startRef.current=ts;setPhase('crystal');}
+                  } else {
+                    const t=Math.min(elapsed/1200,1);
+                    drawCrystal(ctx,easeOut(t),Math.sin(elapsed/600)*0.5+0.5);
                   }
-
                   frameRef.current = requestAnimationFrame(animate);
                 };
-
                 frameRef.current = requestAnimationFrame(animate);
                 return () => cancelAnimationFrame(frameRef.current);
               }, []);
 
               return (
-                <div style={{
-                  width: '100vw', height: '100vh',
-                  background: '#000',
-                  display: 'flex', flexDirection: 'column',
-                  alignItems: 'center', justifyContent: 'center',
-                  fontFamily: '"Audiowide", sans-serif',
-                  overflow: 'hidden'
-                }}>
-                  <style>{`
-                    @import url('https://fonts.googleapis.com/css2?family=Audiowide&display=swap');
-                    @keyframes victoryFadeIn {
-                      from { opacity: 0; transform: translateY(16px); }
-                      to   { opacity: 1; transform: translateY(0); }
-                    }
-                  `}</style>
-                  <canvas ref={canvasRef} style={{ width: '340px', height: '340px' }} />
-                  {phase === 'crystal' && (
-                    <div style={{ textAlign: 'center', animation: 'victoryFadeIn 1s ease-out 0.6s both' }}>
-                      <h1 style={{
-                        fontSize: '2.2em', margin: '0 0 12px',
-                        color: 'white',
-                        textShadow: '0 0 30px rgba(255,255,255,0.8)',
-                        letterSpacing: '3px'
-                      }}>CRYSTAL OF WISDOM</h1>
-                      <p style={{ color: 'rgba(200,220,255,0.8)', letterSpacing: '2px', fontSize: '1em', margin: 0 }}>
-                        YOU HAVE BROKEN FREE FROM EDEN
-                      </p>
+                <div style={{width:'100vw',height:'100vh',background:'#000',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',fontFamily:'"Audiowide",sans-serif',overflow:'hidden'}}>
+                  <style>{`@import url('https://fonts.googleapis.com/css2?family=Audiowide&display=swap');@keyframes victoryFadeIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}`}</style>
+                  <canvas ref={canvasRef} style={{width:'340px',height:'340px'}}/>
+                  {phase==='crystal'&&(
+                    <div style={{textAlign:'center',animation:'victoryFadeIn 1s ease-out 0.6s both'}}>
+                      <h1 style={{fontSize:'2.2em',margin:'0 0 12px',color:'white',textShadow:'0 0 30px rgba(255,255,255,0.8)',letterSpacing:'3px'}}>CRYSTAL OF WISDOM</h1>
+                      <p style={{color:'rgba(200,220,255,0.8)',letterSpacing:'2px',fontSize:'1em',margin:0}}>YOU HAVE BROKEN FREE FROM EDEN</p>
                     </div>
                   )}
                 </div>
@@ -528,377 +338,72 @@
           const progress = (currentLevel / (levels.length - 1)) * 100;
 
           return (
-            <div style={{
-              width: '100vw',
-              minHeight: '100vh',
-              background: getBackgroundGradient(),
-              padding: '20px',
-              paddingTop: '70px',
-              fontFamily: '"Crimson Text", serif',
-              transition: 'background 1.2s ease-in-out',
-              position: 'relative',
-              boxSizing: 'border-box'
-            }}>
+            <div style={{width:'100vw',minHeight:'100vh',background:getBackgroundGradient(),padding:'20px',paddingTop:'70px',fontFamily:'"Crimson Text",serif',transition:'background 1.2s ease-in-out',position:'relative',boxSizing:'border-box'}}>
               <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Crimson+Text:ital@0;1&family=Space+Grotesk:wght@400;700&display=swap');
-
-                @keyframes slideIn {
-                  from { opacity: 0; transform: translateY(30px); }
-                  to   { opacity: 1; transform: translateY(0); }
-                }
-
-                /* FIX: smoother shard animation with spring easing */
-                @keyframes shardAppear {
-                  0%   { opacity: 0; transform: scale(0.3) rotateZ(-20deg); }
-                  60%  { opacity: 1; transform: scale(1.12) rotateZ(4deg); }
-                  80%  { transform: scale(0.96) rotateZ(-2deg); }
-                  100% { opacity: 1; transform: scale(1) rotateZ(0deg); }
-                }
-
-                @keyframes pulse {
-                  0%, 100% { transform: scale(1); }
-                  50%       { transform: scale(1.06); }
-                }
-
-                @keyframes shardPopIn {
-                  0%   { opacity: 0; transform: scale(0.3) rotateZ(-20deg); }
-                  60%  { opacity: 1; transform: scale(1.15) rotateZ(5deg); }
-                  80%  { transform: scale(0.95) rotateZ(-2deg); }
-                  100% { opacity: 1; transform: scale(1) rotateZ(0deg); }
-                }
-
-                /* FIX: persistent resource bar always visible at top */
-                .resource-bar {
-                  position: fixed;
-                  top: 0; left: 0; right: 0;
-                  background: rgba(0, 0, 0, 0.55);
-                  backdrop-filter: blur(10px);
-                  -webkit-backdrop-filter: blur(10px);
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  gap: 16px;
-                  padding: 10px 20px;
-                  z-index: 999;
-                  border-bottom: 1px solid rgba(255,255,255,0.1);
-                }
-
-                .resource-bar-label {
-                  color: rgba(255,255,255,0.5);
-                  font-family: "Space Grotesk", sans-serif;
-                  font-size: 0.8em;
-                  letter-spacing: 2px;
-                  text-transform: uppercase;
-                }
-
-                .shard-backpack {
-                  position: fixed;
-                  top: 60px;
-                  right: 20px;
-                  display: flex;
-                  gap: 8px;
-                  flex-wrap: wrap;
-                  max-width: 180px;
-                  justify-content: flex-end;
-                  z-index: 1000;
-                }
-
-                .shard {
-                  width: 38px;
-                  height: 38px;
-                  border-radius: 50%;
-                  /* FIX: spring cubic-bezier + stagger via animation-delay on element */
-                  animation: shardAppear 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-                  box-shadow: 0 0 12px currentColor;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  font-size: 0.75em;
-                  font-weight: bold;
-                  color: white;
-                  font-family: "Space Grotesk", sans-serif;
-                }
-
-                .content {
-                  max-width: 900px;
-                  margin: 20px auto 60px;
-                  animation: slideIn 0.6s ease-out;
-                }
-
-                .level-title {
-                  font-family: "Space Grotesk", sans-serif;
-                  font-size: 2.5em;
-                  font-weight: 700;
-                  text-align: center;
-                  margin-bottom: 8px;
-                  letter-spacing: 4px;
-                  color: ${getTextColor()};
-                }
-
-                .level-subtitle {
-                  text-align: center;
-                  font-size: 0.95em;
-                  color: ${getTextColor()};
-                  opacity: 0.7;
-                  margin-bottom: 30px;
-                  font-family: "Space Grotesk", sans-serif;
-                  letter-spacing: 1px;
-                }
-
-                /* resource bar source link style */
-                .source-link-bar {
-                  display: inline-flex;
-                  align-items: center;
-                  gap: 6px;
-                  background: ${getAccentColor()};
-                  color: ${currentLevel < 3 ? '#000' : '#fff'};
-                  padding: 7px 18px;
-                  text-decoration: none;
-                  border-radius: 4px;
-                  font-family: "Space Grotesk", sans-serif;
-                  font-weight: 700;
-                  font-size: 0.85em;
-                  letter-spacing: 1px;
-                  transition: all 0.25s ease;
-                  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-                }
-
-                .source-link-bar:hover {
-                  transform: translateY(-1px);
-                  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-                  opacity: 0.92;
-                }
-
-                .section-card {
-                  background: ${currentLevel < 3 ? 'rgba(255,255,255,0.88)' : 'rgba(0,0,0,0.55)'};
-                  padding: 40px;
-                  border-radius: 10px;
-                  margin: 20px 0;
-                  border: 2px solid ${getAccentColor()};
-                  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-                  backdrop-filter: blur(4px);
-                }
-
-                .section-number {
-                  font-family: "Space Grotesk", sans-serif;
-                  font-size: 0.85em;
-                  color: ${getAccentColor()};
-                  text-transform: uppercase;
-                  letter-spacing: 2px;
-                  margin-bottom: 8px;
-                }
-
-                .section-title {
-                  font-family: "Space Grotesk", sans-serif;
-                  font-size: 1.8em;
-                  font-weight: 700;
-                  color: ${getTextColor()};
-                  margin: 12px 0 22px 0;
-                }
-
-                .section-question {
-                  font-size: 1.2em;
-                  line-height: 1.8;
-                  color: ${getTextColor()};
-                  margin-bottom: 22px;
-                  font-style: italic;
-                }
-
-                .input-group {
-                  display: flex;
-                  gap: 10px;
-                  margin-top: 22px;
-                }
-
-                .answer-input {
-                  flex: 1;
-                  padding: 14px 20px;
-                  font-size: 1em;
-                  border: 2px solid ${getAccentColor()};
-                  border-radius: 4px;
-                  font-family: "Space Grotesk", sans-serif;
-                  background: ${currentLevel < 3 ? 'white' : '#1a1a1a'};
-                  color: ${getTextColor()};
-                  transition: box-shadow 0.25s ease, transform 0.25s ease;
-                }
-
-                .answer-input:focus {
-                  outline: none;
-                  box-shadow: 0 0 0 3px ${getAccentColor()}44;
-                  transform: translateY(-2px);
-                }
-
-                .submit-btn {
-                  padding: 14px 30px;
-                  background: ${getAccentColor()};
-                  color: ${currentLevel < 3 ? '#000' : '#fff'};
-                  border: none;
-                  border-radius: 4px;
-                  font-family: "Space Grotesk", sans-serif;
-                  font-weight: 700;
-                  font-size: 1em;
-                  cursor: pointer;
-                  transition: transform 0.2s ease, box-shadow 0.2s ease;
-                  text-transform: uppercase;
-                  letter-spacing: 2px;
-                }
-
-                .submit-btn:hover {
-                  transform: translateY(-3px);
-                  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-                }
-
-                .submit-btn:active {
-                  transform: translateY(-1px);
-                }
-
-                .feedback {
-                  margin-top: 18px;
-                  padding: 14px;
-                  border-radius: 4px;
-                  font-family: "Space Grotesk", sans-serif;
-                  font-weight: 700;
-                  text-align: center;
-                  min-height: 20px;
-                }
-
-                .feedback.correct {
-                  color: #22c55e;
-                  background: rgba(34, 197, 94, 0.1);
-                }
-
-                .feedback.incorrect {
-                  color: ${currentLevel < 3 ? '#dc2626' : '#ff69b4'};
-                  background: rgba(220, 38, 38, 0.1);
-                }
-
-                .progress-bar {
-                  position: fixed;
-                  bottom: 0; left: 0;
-                  height: 5px;
-                  background: ${getAccentColor()};
-                  width: ${progress}%;
-                  transition: width 0.8s ease, background 1.2s ease;
-                  z-index: 100;
-                }
+                @keyframes slideIn{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+                @keyframes shardAppear{0%{opacity:0;transform:scale(0.3)rotateZ(-20deg)}60%{opacity:1;transform:scale(1.12)rotateZ(4deg)}80%{transform:scale(0.96)rotateZ(-2deg)}100%{opacity:1;transform:scale(1)rotateZ(0deg)}}
+                @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+                @keyframes shardPopIn{0%{opacity:0;transform:scale(0.3)rotateZ(-20deg)}60%{opacity:1;transform:scale(1.15)rotateZ(5deg)}80%{transform:scale(0.95)rotateZ(-2deg)}100%{opacity:1;transform:scale(1)rotateZ(0deg)}}
+                .resource-bar{position:fixed;top:0;left:0;right:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;gap:16px;padding:10px 20px;z-index:999;border-bottom:1px solid rgba(255,255,255,0.1);}
+                .resource-bar-label{color:rgba(255,255,255,0.5);font-family:"Space Grotesk",sans-serif;font-size:0.8em;letter-spacing:2px;text-transform:uppercase;}
+                .shard-backpack{position:fixed;top:60px;right:20px;display:flex;gap:8px;flex-wrap:wrap;max-width:180px;justify-content:flex-end;z-index:1000;}
+                .shard{width:38px;height:38px;border-radius:50%;animation:shardAppear 0.7s cubic-bezier(0.34,1.56,0.64,1) both;box-shadow:0 0 12px currentColor;display:flex;align-items:center;justify-content:center;font-size:0.75em;font-weight:bold;color:white;font-family:"Space Grotesk",sans-serif;}
+                .content{max-width:900px;margin:20px auto 60px;animation:slideIn 0.6s ease-out;}
+                .source-link-bar{display:inline-flex;align-items:center;gap:6px;background:${getAccentColor()};color:${currentLevel<3?'#000':'#fff'};padding:7px 18px;text-decoration:none;border-radius:4px;font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:0.85em;letter-spacing:1px;transition:all 0.25s ease;box-shadow:0 2px 10px rgba(0,0,0,0.3);}
+                .source-link-bar:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,0.4);opacity:0.92;}
+                .section-card{background:${currentLevel<3?'rgba(255,255,255,0.88)':'rgba(0,0,0,0.55)'};padding:40px;border-radius:10px;margin:20px 0;border:2px solid ${getAccentColor()};box-shadow:0 8px 32px rgba(0,0,0,0.2);backdrop-filter:blur(4px);}
+                .answer-input{flex:1;padding:14px 20px;font-size:1em;border:2px solid ${getAccentColor()};border-radius:4px;font-family:"Space Grotesk",sans-serif;background:${currentLevel<3?'white':'#1a1a1a'};color:${getTextColor()};transition:box-shadow 0.25s ease,transform 0.25s ease;}
+                .answer-input:focus{outline:none;box-shadow:0 0 0 3px ${getAccentColor()}44;transform:translateY(-2px);}
+                .submit-btn{padding:14px 30px;background:${getAccentColor()};color:${currentLevel<3?'#000':'#fff'};border:none;border-radius:4px;font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:1em;cursor:pointer;transition:transform 0.2s ease,box-shadow 0.2s ease;text-transform:uppercase;letter-spacing:2px;}
+                .submit-btn:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,0.3);}
+                .submit-btn:active{transform:translateY(-1px);}
+                .feedback{margin-top:18px;padding:14px;border-radius:4px;font-family:"Space Grotesk",sans-serif;font-weight:700;text-align:center;min-height:20px;}
+                .feedback.correct{color:#22c55e;background:rgba(34,197,94,0.1);}
+                .feedback.incorrect{color:${currentLevel<3?'#dc2626':'#ff69b4'};background:rgba(220,38,38,0.1);}
+                .progress-bar{position:fixed;bottom:0;left:0;height:5px;background:${getAccentColor()};width:${progress}%;transition:width 0.8s ease,background 1.2s ease;z-index:100;}
               `}</style>
 
-              {/* FIX: persistent resource bar — always visible regardless of section */}
               <div className="resource-bar">
                 <span className="resource-bar-label">{currentLevelData.name}</span>
                 {currentLevelData.sourceLink !== '#' ? (
-                  <a
-                    href={currentLevelData.sourceLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="source-link-bar"
-                  >
+                  <a href={currentLevelData.sourceLink} target="_blank" rel="noopener noreferrer" className="source-link-bar">
                     📖 VIEW {currentLevelData.sourceLabel.toUpperCase()}
                   </a>
                 ) : (
-                  <span style={{
-                    fontFamily: '"Space Grotesk", sans-serif',
-                    fontSize: '0.8em',
-                    color: 'rgba(255,255,255,0.35)',
-                    letterSpacing: '1px'
-                  }}>
-                    {currentLevelData.sourceLabel} — Coming Soon
-                  </span>
+                  <span style={{fontFamily:'"Space Grotesk",sans-serif',fontSize:'0.8em',color:'rgba(255,255,255,0.35)',letterSpacing:'1px'}}>{currentLevelData.sourceLabel} — Coming Soon</span>
                 )}
               </div>
 
-              {/* FIX: shard backpack with staggered animation-delay per index */}
               <div className="shard-backpack">
                 {collectedShards.map((shard, idx) => (
-                  <div
-                    key={idx}
-                    className="shard"
-                    style={{
-                      backgroundColor: shard.color,
-                      animationDelay: `${idx * 80}ms`
-                    }}
-                    title={shard.name}
-                  >
-                    {idx + 1}
-                  </div>
+                  <div key={idx} className="shard" style={{backgroundColor:shard.color,animationDelay:`${idx*80}ms`}} title={shard.name}>{idx+1}</div>
                 ))}
               </div>
 
               <div className="content">
-                <div className="level-title">{currentLevelData.name}</div>
-                <div className="level-subtitle">Level {currentLevel + 1} of {levels.length} &nbsp;·&nbsp; Section {currentSection + 1} of {currentLevelData.sections.length}</div>
+                <div style={{fontFamily:'"Space Grotesk",sans-serif',fontSize:'2.5em',fontWeight:700,textAlign:'center',marginBottom:'8px',letterSpacing:'4px',color:getTextColor()}}>{currentLevelData.name}</div>
+                <div style={{textAlign:'center',fontSize:'0.95em',color:getTextColor(),opacity:0.7,marginBottom:'30px',fontFamily:'"Space Grotesk",sans-serif',letterSpacing:'1px'}}>Level {currentLevel+1} of {levels.length} &nbsp;·&nbsp; Section {currentSection+1} of {currentLevelData.sections.length}</div>
 
                 <div className="section-card">
-                  <div className="section-number">
-                    Section {currentSection + 1} of {currentLevelData.sections.length}
-                  </div>
-                  <div className="section-title">{currentSectionData.title}</div>
-                  <div className="section-question">{currentSectionData.question}</div>
+                  <div style={{fontFamily:'"Space Grotesk",sans-serif',fontSize:'0.85em',color:getAccentColor(),textTransform:'uppercase',letterSpacing:'2px',marginBottom:'8px'}}>Section {currentSection+1} of {currentLevelData.sections.length}</div>
+                  <div style={{fontFamily:'"Space Grotesk",sans-serif',fontSize:'1.8em',fontWeight:700,color:getTextColor(),margin:'12px 0 22px'}}>{currentSectionData.title}</div>
+                  <div style={{fontSize:'1.2em',lineHeight:1.8,color:getTextColor(),marginBottom:'22px',fontStyle:'italic'}}>{currentSectionData.question}</div>
 
-                  <div className="input-group">
-                    <input
-                      type="text"
-                      className="answer-input"
-                      value={inputValue}
-                      onChange={(e) => setInputValue(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder="Enter your answer..."
-                    />
-                    <button className="submit-btn" onClick={handleSubmitAnswer}>
-                      Submit
-                    </button>
+                  <div style={{display:'flex',gap:'10px',marginTop:'22px'}}>
+                    <input type="text" className="answer-input" value={inputValue} onChange={e=>setInputValue(e.target.value)} onKeyDown={handleKeyDown} placeholder="Enter your answer..."/>
+                    <button className="submit-btn" onClick={handleSubmitAnswer}>Submit</button>
                   </div>
 
-                  {feedback && (
-                    <div className={`feedback ${feedback.includes('Correct') ? 'correct' : 'incorrect'}`}>
-                      {feedback}
-                    </div>
-                  )}
+                  {feedback && <div className={`feedback ${feedback.includes('Correct')?'correct':'incorrect'}`}>{feedback}</div>}
                 </div>
               </div>
 
-              {/* Shard collection overlay */}
               {showShard && (
-                <div style={{
-                  position: 'fixed',
-                  inset: 0,
-                  background: 'rgba(0,0,0,0.6)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  zIndex: 2000,
-                  animation: 'slideIn 0.4s ease-out'
-                }}>
-                  <div style={{
-                    width: '150px',
-                    height: '150px',
-                    borderRadius: '50%',
-                    background: `radial-gradient(circle at 35% 35%, ${shardColors[currentLevel]}, ${shardColors[currentLevel]}99)`,
-                    margin: '0 auto 28px',
-                    boxShadow: `0 0 60px ${shardColors[currentLevel]}cc`,
-                    animation: 'shardPopIn 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both, pulse 2s ease-in-out 0.7s infinite'
-                  }}></div>
-                  <div style={{
-                    fontFamily: '"Space Grotesk", sans-serif',
-                    fontSize: '1.4em',
-                    fontWeight: '700',
-                    color: shardColors[currentLevel],
-                    textShadow: `0 0 24px ${shardColors[currentLevel]}88`,
-                    letterSpacing: '2px',
-                    textAlign: 'center'
-                  }}>
-                    {currentLevelData.shardName}
-                  </div>
-                  <div style={{
-                    marginTop: '12px',
-                    fontFamily: '"Space Grotesk", sans-serif',
-                    fontSize: '0.85em',
-                    color: 'rgba(255,255,255,0.5)',
-                    letterSpacing: '1px'
-                  }}>
-                    COLLECTED
-                  </div>
+                <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',zIndex:2000,animation:'slideIn 0.4s ease-out'}}>
+                  <div style={{width:'150px',height:'150px',borderRadius:'50%',background:`radial-gradient(circle at 35% 35%, ${shardColors[currentLevel]}, ${shardColors[currentLevel]}99)`,margin:'0 auto 28px',boxShadow:`0 0 60px ${shardColors[currentLevel]}cc`,animation:'shardPopIn 0.7s cubic-bezier(0.34,1.56,0.64,1) both, pulse 2s ease-in-out 0.7s infinite'}}></div>
+                  <div style={{fontFamily:'"Space Grotesk",sans-serif',fontSize:'1.4em',fontWeight:'700',color:shardColors[currentLevel],textShadow:`0 0 24px ${shardColors[currentLevel]}88`,letterSpacing:'2px',textAlign:'center'}}>{currentLevelData.shardName}</div>
+                  <div style={{marginTop:'12px',fontFamily:'"Space Grotesk",sans-serif',fontSize:'0.85em',color:'rgba(255,255,255,0.5)',letterSpacing:'1px'}}>COLLECTED</div>
                 </div>
               )}
 
@@ -907,8 +412,15 @@
           );
         };
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<ScavengerHunt />);
+        // ─── APP ROOT ─────────────────────────────────────────────────────────
+        const App = () => {
+          const [screen, setScreen] = useState('home');
+          return screen === 'home'
+            ? <HomePage onEnter={() => setScreen('hunt')} />
+            : <ScavengerHunt />;
+        };
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     </script>
 </body>
 </html>
