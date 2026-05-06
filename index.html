@@ -235,7 +235,7 @@
                 setTimeout(() => { setCurrentSection(currentSection + 1); setInputValue(''); setFeedback(''); }, 1500);
               }
             } else {
-              setFeedback('✗ Not quite. Try again or check the source material.');
+              setFeedback('✗ Not quite. Try again.');
             }
           };
 
@@ -380,10 +380,10 @@
 
               <div className="content">
                 <div style={{fontFamily:'"Space Grotesk",sans-serif',fontSize:'2.5em',fontWeight:700,textAlign:'center',marginBottom:'8px',letterSpacing:'4px',color:getTextColor()}}>{currentLevelData.name}</div>
-                <div style={{textAlign:'center',fontSize:'0.95em',color:getTextColor(),opacity:0.7,marginBottom:'30px',fontFamily:'"Space Grotesk",sans-serif',letterSpacing:'1px'}}>Level {currentLevel+1} of {levels.length} &nbsp;·&nbsp; Section {currentSection+1} of {currentLevelData.sections.length}</div>
+                <div style={{textAlign:'center',fontSize:'0.95em',color:getTextColor(),opacity:0.7,marginBottom:'30px',fontFamily:'"Space Grotesk",sans-serif',letterSpacing:'1px'}}>Section {currentLevel+1} of {levels.length} &nbsp;·&nbsp; Level {currentSection+1} of {currentLevelData.sections.length}</div>
 
                 <div className="section-card">
-                  <div style={{fontFamily:'"Space Grotesk",sans-serif',fontSize:'0.85em',color:getAccentColor(),textTransform:'uppercase',letterSpacing:'2px',marginBottom:'8px'}}>Section {currentSection+1} of {currentLevelData.sections.length}</div>
+                  <div style={{fontFamily:'"Space Grotesk",sans-serif',fontSize:'0.85em',color:getAccentColor(),textTransform:'uppercase',letterSpacing:'2px',marginBottom:'8px'}}>Level {currentSection+1} of {currentLevelData.sections.length}</div>
                   <div style={{fontFamily:'"Space Grotesk",sans-serif',fontSize:'1.8em',fontWeight:700,color:getTextColor(),margin:'12px 0 22px'}}>{currentSectionData.title}</div>
                   <div style={{fontSize:'1.2em',lineHeight:1.8,color:getTextColor(),marginBottom:'22px',fontStyle:'italic'}}>{currentSectionData.question}</div>
 
